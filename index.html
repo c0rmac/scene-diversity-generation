@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mug and Spoon PCBO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+[hidden] { display: none !important; }   /* the published page adds this reset; local serving needs it too */
+/* Layout: a lab notebook page. A summary band, then the pose gallery as the working surface, then the formulation as a readable note with a sticky section index. */
+:root {
+  --bg: #f4f5f7; --surface: #ffffff; --ink: #18202d; --muted: #5a6476; --line: #dde1e8;
+  --mug: #2f5fd0; --spoon: #d9761a; --chip: #eceff4; --focus: #2f5fd0;
+  --display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10141b; --surface: #171c25; --ink: #e6e9ef; --muted: #9aa3b4; --line: #2a3240;
+  --mug: #7c9ef3; --spoon: #f1a04a; --chip: #212836; --focus: #7c9ef3; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #10141b; --surface: #171c25; --ink: #e6e9ef; --muted: #9aa3b4; --line: #2a3240;
+  --mug: #7c9ef3; --spoon: #f1a04a; --chip: #212836; --focus: #7c9ef3; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: var(--mug); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
+.eyebrow { font: 500 12px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+header.top { padding-block: 40px 28px; border-bottom: 1px solid var(--line); }
+header.top .wrap { display: grid; gap: 14px; }
+header.top h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 700; letter-spacing: -.01em; }
+header.top h1 .m { color: var(--mug); } header.top h1 .s { color: var(--spoon); }
+.lede { max-width: 68ch; font-size: 18px; color: var(--ink); margin: 0; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 10px 0 0; }
+.facts div { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 2px; }
+.facts dt { font: 500 12px/1.3 var(--mono); color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.facts dd { margin: 0; font: 600 22px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+.facts dd small { display: block; font: 400 13px/1.4 var(--body); color: var(--muted); }
+nav.jump { display: flex; gap: 16px; flex-wrap: wrap; font: 500 14px var(--mono); }
+section { padding-block: 36px; }
+section > .wrap > h2 { font-size: 30px; margin-bottom: 10px; }
+.note { max-width: 72ch; color: var(--muted); margin: 0 0 18px; }
+.legend { display: flex; gap: 18px; flex-wrap: wrap; font: 400 13px var(--mono); color: var(--muted); margin: -6px 0 18px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+/* identified components */
+.ident { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; margin-bottom: 30px; }
+.ident button { all: unset; cursor: pointer; display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+.ident button:hover { border-color: var(--mug); }
+.ident h3 { font-size: 17px; font-weight: 600; }
+.ident .sub { font: 400 13px/1.45 var(--mono); color: var(--muted); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.pair img { width: 100%; aspect-ratio: 1; display: block; max-width: 100%; }
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 16px; position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.group > span { font: 500 12px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-right: 4px; }
+.chip { font: 500 13px var(--mono); border: 1px solid var(--line); background: var(--chip); color: var(--ink); border-radius: 999px; padding: 5px 11px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+select { font: 500 13px var(--mono); padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.count { font: 500 13px var(--mono); color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+/* grid */
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pager { display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 16px; font: 500 14px var(--mono); }
+.pager .btn:disabled { opacity: .4; cursor: default; }
+@media (max-width: 860px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+.card { all: unset; cursor: pointer; display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px; min-width: 0; }
+.card:hover { border-color: var(--mug); }
+.card:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.cap { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font: 500 12px var(--mono); }
+.num { color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { padding: 1px 7px; border-radius: 999px; background: var(--chip); }
+.tag.C { color: var(--mug); } .tag.P { color: var(--spoon); }
+.ang { font: 400 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.nm { font: 600 13px/1.3 var(--display); }
+/* lightbox */
+.lb { position: fixed; inset: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+.lb .box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; max-width: 980px; width: 100%; padding: 16px; display: grid; gap: 14px; }
+.lb .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.lb .bar h3 { font-size: 20px; margin-right: auto; }
+.lb .views { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lb figure { margin: 0; display: grid; gap: 4px; }
+.lb figure img { width: 100%; aspect-ratio: 1; border-radius: 4px; max-width: 100%; }
+.lb figcaption { font: 400 12px var(--mono); color: var(--muted); }
+.lb dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; font-size: 15px; }
+.lb dt { font: 500 12px/1.9 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.lb dd { margin: 0; font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+.lb dd code { font: 400 12.5px var(--mono); }
+.btn { font: 500 13px var(--mono); border: 1px solid var(--line); background: var(--chip); color: var(--ink); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+/* formulation */
+.doc { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; align-items: start; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); font: 400 13px/1.5 var(--mono); }
+.toc ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; counter-reset: s; }
+.toc a { color: var(--muted); text-decoration: none; } .toc a:hover { color: var(--ink); }
+article { max-width: 78ch; min-width: 0; }
+article h2 { font-size: 24px; margin: 36px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+article h2:first-child { margin-top: 0; }
+article h3 { font-size: 18px; margin: 24px 0 8px; }
+article p, article li { font-size: 16.5px; }
+article ul, article ol { padding-left: 22px; }
+article li + li { margin-top: 4px; }
+article code { font: 400 .86em var(--mono); background: var(--chip); padding: 1px 5px; border-radius: 4px; }
+article .math { overflow-x: auto; margin: 14px 0; }
+article pre.code { background: var(--chip); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font: 400 13px/1.55 var(--mono); }
+article pre.code code { background: none; padding: 0; }
+.tablewrap { overflow-x: auto; margin: 14px 0; }
+table { border-collapse: collapse; font-size: 14.5px; min-width: 100%; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 12px var(--mono); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+td { font-variant-numeric: tabular-nums; }
+footer { border-top: 1px solid var(--line); padding-block: 22px 40px; font: 400 13px/1.6 var(--mono); color: var(--muted); }
+@media (max-width: 860px) { .doc { grid-template-columns: 1fr; } .toc { position: static; } .count { margin-left: 0; } }
+@media (max-width: 520px) { .lb .views { grid-template-columns: 1fr; } .ident { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: no-preference) { .card, .ident button { transition: border-color .15s; } }
+</style>
+
+<header class="top"><div class="wrap">
+  <div class="eyebrow">Majid's mug-and-spoon example · μ = 10 · 1,000 particles</div>
+  <h1><span class="m">Mug</span> and <span class="s">Spoon</span> PCBO</h1>
+  <p class="lede">How many distinct statically stable scenes of a mug and a spoon on a table a polarised consensus-based optimiser (PCBO) with 1,000 particles finds, and the mathematics of the solver.</p>
+  <dl class="facts">
+    <div><dt>Disconnected components found</dt><dd>1,050<small>scenes of strongly stable equilibria, each connection checked</small></dd></div>
+    <div><dt>Known / new</dt><dd>100 / 950<small>matching a reference component / joined to none</small></dd></div>
+    <div><dt>Oracle calls</dt><dd>1,449,545<small>one call per equilibrium check</small></dd></div>
+    <div><dt>Particles</dt><dd>1,000<small>62,874 stable scenes landed on</small></dd></div>
+  </dl>
+  <nav class="jump"><a href="#results">Results</a><a href="#gallery">Gallery</a><a href="#formulation">Formulation</a></nav>
+</div></header>
+
+<section id="results"><div class="wrap">
+  <h2>Results</h2>
+  <p style="max-width:72ch;margin:0 0 10px">A scene is a connected component of the set of strongly stable (flat) equilibria: two configurations belong to the same scene when a path of equilibria joins them. PCBO with 1,000 particles found <strong>1,050 disconnected components</strong> in 1,449,545 oracle calls: 100 of them are components of a reference set of known scenes, and 950 are new.</p>
+  <div class="charts2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;max-width:1100px"><div class="tablewrap" style="margin:0"><svg id="curve_it" viewBox="0 0 640 300" role="img" aria-label="Disconnected components found against iterations" style="width:100%;height:auto;display:block"></svg></div><div class="tablewrap" style="margin:0"><svg id="curve" viewBox="0 0 640 300" role="img" aria-label="Disconnected components found against oracle calls" style="width:100%;height:auto;display:block"></svg></div><div class="tablewrap" style="margin:0"><svg id="curve_nv" viewBox="0 0 640 300" role="img" aria-label="Share of discoveries that were new components, per 10 iterations" style="width:100%;height:auto;display:block"></svg></div></div><p class="note" style="max-width:1100px;margin:6px 0 0">Third chart: for each block of 10 iterations, the share of checked discoveries that were a component the run had not found before (every 32nd stable state is checked, about 2 per iteration). The dashed line is the whole run: 1050 new of 1962 checked (54%). A steady share means the run keeps finding new components at the same rate rather than returning to ones it already has.</p>
+  <p class="note">How the count is made: the flat states PCBO lands on are merged, by checked joins (paths of exact equilibria), into a reference of 2,498 components built from 10,386 random landings and Majid's 8,771 stable poses; states that join no reference component and no other state form new components. The count uses every 32nd of the 62,874 flat states (1,962 after re-checking their flatness), so the full run reaches at least this many. The merge ran until no further joins were found.</p>
+<h3 style="font-size:19px;margin:18px 0 6px">Checks of the method</h3><p class="note" style="margin:0 0 6px">Variants of the solver at 1,000 particles, each counted by the same verified merge at equal oracle calls.</p><div class="tablewrap" style="max-width:900px"><table><thead><tr><th>variant</th><th>disconnected components</th><th>at oracle calls</th></tr></thead><tbody><tr><td>earlier PCBO setup with heavier steps, 50 iterations (seed 10)</td><td>353 (53 known, 300 new)</td><td>115,000</td></tr><tr><td>with the contact term (seed 10)</td><td>127 (31 known, 96 new)</td><td>35,726</td></tr><tr><td>without the contact term (seed 10)</td><td>121 (33 known, 88 new)</td><td>35,726</td></tr><tr><td>consensus switched off (seed 10)</td><td>181 (31 known, 150 new)</td><td>48,772</td></tr><tr><td>same settings as the main run (seed 11)</td><td>147 (33 known, 114 new)</td><td>36,941</td></tr><tr><td>adaptive noise floor (seed 11)</td><td>134 (32 known, 102 new)</td><td>36,941</td></tr><tr><td>repulsion among graph neighbours (seed 11)</td><td>169 (42 known, 127 new)</td><td>36,941</td></tr><tr><td>glued metric: proved connections at distance zero (seed 11)</td><td>143 (32 known, 111 new)</td><td>36,941</td></tr><tr><td>glued metric with repulsion among glued neighbours (seed 11)</td><td>142 (37 known, 105 new)</td><td>36,941</td></tr><tr><td>consensus switched off (seed 11)</td><td>145 (32 known, 113 new)</td><td>36,941</td></tr><tr><td>consensus on feasibility only, glued metric (seed 11)</td><td>154 (44 known, 110 new)</td><td>36,941</td></tr><tr><td>glued metric, consensus switched off (seed 11)</td><td>135 (29 known, 106 new)</td><td>36,941</td></tr><tr><td>consensus point a stable state (medoid), repulsion working, glued metric (seed 11)</td><td>172 (44 known, 128 new)</td><td>36,941</td></tr><tr><td>consensus point a stable state (medoid), repulsion not acting, glued metric (seed 11)</td><td>161 (41 known, 120 new)</td><td>36,941</td></tr><tr><td>medoid consensus on feasibility only, glued metric (seed 11)</td><td>153 (33 known, 120 new)</td><td>36,941</td></tr><tr><td>component-aware screen (seed 11)</td><td>136 (34 known, 102 new); same settings at this cut: 155</td><td>39,137</td></tr><tr><td>random search: a fresh landing for every particle at every iteration, every 128th stable state, merged jointly with the main run (seed 11)</td><td>127 (35 known, 92 new) from 402 states</td><td>439,402</td></tr><tr><td>the main lean PCBO run, every 128th stable state, in the same joint merge (seed 11)</td><td>103 (17 known, 86 new) from 157 states; only 5 shared with random search</td><td>439,402</td></tr><tr><td>random search stopped at the main run's CPU time (1,092 CPU-s), same joint merge</td><td>36 (10 known, 26 new) from 105 states</td><td>113,905</td></tr><tr><td>crowding by the chain distance of the run's own arrivals (single-linkage ultrametric, pose-only steps), 100 iterations, every 32nd stable state, merged jointly with the main run (seed 11)</td><td>125 (32 known, 93 new) from 243 states; 9 shared with the main run</td><td>155,553</td></tr><tr><td>the main run at the same oracle calls, in the same joint merge (seed 11)</td><td>121 (25 known, 96 new) from 246 states</td><td>155,553</td></tr><tr><td>chain distance (single-linkage ultrametric of the run's arrivals) in the crowding and the repulsion, 100 iterations, seeds 11, 12, 13, every 64th stable state, one joint merge</td><td>57 + 62 + 59 = 178</td><td>about 154,000 per seed</td></tr><tr><td>the lean baseline, same seeds, same merge, same oracle calls</td><td>62 + 68 + 70 = 200</td><td>about 154,000 per seed</td></tr><tr><td>jump distance (fewest multi-contact jumps along chains of the run's arrivals) in the crowding, first 50 steps, seeds 11, 12, 13, every 32nd stable state, per-seed joint merges</td><td>71 + 68 + 74 = 213 (52.6% of checked states distinct)</td><td>about 80,500 per seed</td></tr><tr><td>jump distance in the crowding and the repulsion, same</td><td>66 + 67 + 69 = 202 (50.1%)</td><td>about 80,500 per seed</td></tr><tr><td>the lean baseline, same seeds, merges and oracle calls</td><td>69 + 67 + 67 = 203 (50.0%)</td><td>about 80,500 per seed</td></tr></tbody></table></div>
+</div></section>
+<script>
+(function() {
+  const svg = document.getElementById('curve_nv'), pts = "10,39,19 20,27,12 30,25,8 40,23,15 50,24,16 60,22,11 70,22,11 80,23,9 90,20,10 100,21,7 110,21,13 120,20,9 130,20,10 140,20,9 150,19,11 160,20,14 170,19,10 180,19,11 190,19,16 200,19,14 210,19,14 220,18,10 230,17,11 240,18,9 250,19,12 260,20,10 270,18,9 280,18,8 290,19,12 300,19,9 310,18,9 320,18,11 330,20,11 340,19,12 350,18,10 360,19,13 370,18,14 380,19,12 390,21,13 400,18,11 410,20,12 420,19,11 430,20,10 440,19,11 450,18,12 460,19,9 470,18,8 480,19,13 490,19,11 500,20,10 510,20,7 520,20,8 530,19,11 540,20,10 550,19,12 560,19,8 570,20,11 580,18,11 590,19,11 600,19,8 610,19,13 620,20,8 630,21,11 640,20,10 650,19,8 660,18,8 670,19,9 680,19,8 690,20,10 700,19,12 710,20,6 720,19,13 730,18,9 740,19,9 750,19,9 760,18,10 770,19,10 780,20,10 790,19,9 800,18,10 810,17,5 820,19,12 830,19,12 840,20,11 850,20,11 860,19,8 870,20,9 880,17,10 890,20,10 900,18,8 910,20,12 920,19,6 930,19,7 940,19,11 950,19,14 960,18,13 970,19,14 980,20,10 990,19,11 1000,19,5".split(' ').map(p => p.split(',').map(Number));
+  const W = 640, H = 300, L = 56, R = 16, T = 14, B = 40, xm = pts[pts.length - 1][0], tc = 1962, tn = 1050;
+  const X = x => L + x / xm * (W - L - R), Y = y => H - B - y / 100 * (H - T - B);
+  const nice = (m, k) => { const r = m / k, g = Math.pow(10, Math.floor(Math.log10(r))), f = r / g; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * g; };
+  const xs = Math.max(1, nice(xm, 6)); let s = '';
+  for (let y = 0; y <= 100; y += 25) s += `<line x1="${L}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--line)"/><text x="${L - 8}" y="${Y(y) + 4}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="var(--mono)">${y}%</text>`;
+  for (let x = 0; x <= xm; x += xs) s += `<text x="${X(x)}" y="${H - B + 18}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="var(--mono)">${x}</text>`;
+  s += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" font-size="12" fill="var(--muted)">PCBO iteration (blocks of 10)</text>`;
+  s += `<text x="14" y="${(T + H - B) / 2}" text-anchor="middle" font-size="12" fill="var(--muted)" transform="rotate(-90 14 ${(T + H - B) / 2})">discoveries that are new</text>`;
+  const avg = 100 * tn / tc; s += `<line x1="${L}" x2="${W - R}" y1="${Y(avg)}" y2="${Y(avg)}" stroke="var(--muted)" stroke-dasharray="5 4"/><text x="${W - R - 4}" y="${Y(avg) - 6}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="var(--mono)">${Math.round(avg)}% overall</text>`;
+  const P = pts.map(p => [p[0] - 5, 100 * p[2] / p[1], p]);
+  s += `<polyline points="${P.map(q => X(q[0]) + ',' + Y(q[1])).join(' ')}" fill="none" stroke="var(--spoon)" stroke-width="3" stroke-linejoin="round"/>`;
+  if (P.length <= 40) P.forEach(q => { s += `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="3.5" fill="var(--spoon)"><title>iterations ${q[2][0] - 9}-${q[2][0]}: ${q[2][2]} new of ${q[2][1]} checked (${Math.round(q[1])}%), ${(q[2][2] / 10).toFixed(1)} new components per iteration</title></circle>`; });
+  svg.innerHTML = s;
+})();
+</script>
+<script>
+(function() {
+  const svg = document.getElementById('curve_it'), pts = "0,0 1,4 2,7 3,8 4,10 5,12 6,14 7,15 8,16 9,18 10,19 11,21 12,22 13,24 14,25 15,27 16,28 17,28 18,28 19,29 20,31 21,31 22,31 23,32 24,34 25,35 26,36 27,36 28,38 29,38 30,39 31,41 32,43 33,45 34,46 35,47 36,49 37,50 38,51 39,52 40,54 41,55 42,56 43,58 44,60 45,62 46,63 47,65 48,66 49,69 50,70 51,72 52,74 53,75 54,75 55,76 56,77 57,79 58,79 59,79 60,81 61,81 62,83 63,83 64,85 65,86 66,88 67,88 68,89 69,91 70,92 71,93 72,93 73,93 74,93 75,94 76,97 77,98 78,99 79,99 80,101 81,103 82,104 83,104 84,106 85,106 86,107 87,108 88,108 89,109 90,111 91,111 92,111 93,112 94,115 95,117 96,117 97,117 98,118 99,118 100,118 101,118 102,119 103,120 104,122 105,122 106,124 107,126 108,129 109,130 110,131 111,131 112,131 113,133 114,133 115,133 116,134 117,135 118,137 119,138 120,140 121,140 122,141 123,143 124,143 125,144 126,144 127,145 128,148 129,149 130,150 131,151 132,152 133,152 134,154 135,155 136,157 137,157 138,158 139,159 140,159 141,159 142,160 143,160 144,161 145,162 146,163 147,164 148,166 149,168 150,170 151,170 152,172 153,173 154,175 155,176 156,177 157,178 158,180 159,181 160,184 161,185 162,186 163,187 164,187 165,187 166,188 167,189 168,191 169,193 170,194 171,195 172,197 173,198 174,198 175,198 176,200 177,201 178,203 179,204 180,205 181,207 182,209 183,210 184,212 185,214 186,215 187,217 188,219 189,220 190,221 191,222 192,222 193,224 194,225 195,226 196,228 197,230 198,232 199,234 200,235 201,236 202,238 203,240 204,241 205,242 206,243 207,244 208,246 209,247 210,249 211,249 212,250 213,251 214,252 215,253 216,254 217,256 218,257 219,257 220,259 221,260 222,260 223,261 224,263 225,265 226,265 227,267 228,268 229,269 230,270 231,271 232,272 233,273 234,274 235,275 236,275 237,277 238,277 239,278 240,279 241,282 242,282 243,284 244,285 245,286 246,287 247,288 248,288 249,289 250,291 251,293 252,294 253,294 254,295 255,296 256,297 257,299 258,301 259,301 260,301 261,302 262,304 263,305 264,306 265,307 266,308 267,308 268,308 269,309 270,310 271,312 272,312 273,312 274,313 275,313 276,315 277,316 278,316 279,317 280,318 281,320 282,322 283,322 284,324 285,325 286,326 287,328 288,329 289,329 290,330 291,331 292,331 293,332 294,333 295,335 296,335 297,336 298,336 299,337 300,339 301,340 302,340 303,341 304,342 305,343 306,344 307,346 308,346 309,347 310,348 311,349 312,350 313,350 314,352 315,353 316,354 317,355 318,357 319,358 320,359 321,360 322,362 323,362 324,363 325,363 326,364 327,366 328,368 329,368 330,370 331,371 332,372 333,373 334,374 335,375 336,377 337,379 338,379 339,381 340,382 341,384 342,385 343,386 344,387 345,387 346,388 347,389 348,390 349,391 350,392 351,392 352,394 353,395 354,395 355,397 356,398 357,400 358,402 359,404 360,405 361,406 362,408 363,408 364,410 365,411 366,413 367,414 368,416 369,418 370,419 371,420 372,422 373,422 374,424 375,426 376,426 377,427 378,429 379,430 380,431 381,432 382,434 383,436 384,437 385,438 386,439 387,441 388,441 389,443 390,444 391,444 392,445 393,447 394,449 395,449 396,450 397,451 398,452 399,453 400,455 401,456 402,458 403,460 404,460 405,461 406,462 407,464 408,466 409,466 410,467 411,468 412,470 413,471 414,473 415,474 416,475 417,475 418,476 419,477 420,478 421,479 422,480 423,481 424,482 425,483 426,483 427,484 428,485 429,486 430,488 431,489 432,491 433,492 434,493 435,495 436,496 437,497 438,497 439,498 440,499 441,501 442,502 443,503 444,503 445,505 446,507 447,508 448,510 449,510 450,511 451,513 452,513 453,514 454,514 455,514 456,514 457,515 458,516 459,518 460,520 461,520 462,520 463,520 464,522 465,524 466,526 467,526 468,527 469,527 470,528 471,529 472,531 473,532 474,534 475,535 476,536 477,537 478,538 479,540 480,541 481,542 482,542 483,543 484,544 485,546 486,547 487,548 488,550 489,551 490,552 491,553 492,554 493,555 494,556 495,557 496,557 497,558 498,560 499,561 500,562 501,563 502,564 503,564 504,564 505,564 506,565 507,566 508,568 509,568 510,569 511,569 512,571 513,571 514,572 515,573 516,574 517,574 518,576 519,577 520,577 521,578 522,580 523,581 524,583 525,583 526,583 527,583 528,585 529,586 530,588 531,590 532,592 533,592 534,593 535,594 536,595 537,595 538,596 539,597 540,598 541,600 542,600 543,602 544,603 545,604 546,605 547,606 548,607 549,609 550,610 551,610 552,610 553,612 554,613 555,613 556,614 557,615 558,617 559,618 560,618 561,620 562,621 563,622 564,623 565,624 566,625 567,626 568,627 569,628 570,629 571,631 572,632 573,633 574,634 575,636 576,636 577,638 578,638 579,639 580,640 581,641 582,642 583,643 584,645 585,646 586,647 587,647 588,648 589,650 590,651 591,652 592,653 593,654 594,654 595,654 596,655 597,656 598,657 599,657 600,659 601,660 602,662 603,663 604,664 605,665 606,667 607,668 608,669 609,671 610,672 611,673 612,673 613,674 614,676 615,677 616,677 617,678 618,678 619,679 620,680 621,680 622,681 623,683 624,684 625,685 626,686 627,688 628,689 629,691 630,691 631,692 632,693 633,694 634,694 635,695 636,695 637,697 638,698 639,699 640,701 641,701 642,702 643,703 644,704 645,705 646,707 647,708 648,708 649,709 650,709 651,711 652,711 653,712 654,713 655,714 656,714 657,715 658,716 659,716 660,717 661,719 662,719 663,720 664,721 665,722 666,724 667,725 668,726 669,726 670,726 671,727 672,728 673,730 674,730 675,731 676,732 677,732 678,732 679,732 680,734 681,735 682,737 683,739 684,739 685,740 686,741 687,742 688,742 689,743 690,744 691,746 692,748 693,749 694,751 695,752 696,753 697,753 698,753 699,754 700,756 701,757 702,757 703,758 704,758 705,758 706,759 707,761 708,761 709,762 710,762 711,763 712,764 713,766 714,767 715,769 716,770 717,771 718,771 719,773 720,775 721,776 722,777 723,777 724,779 725,780 726,780 727,781 728,782 729,782 730,784 731,785 732,786 733,787 734,788 735,788 736,789 737,789 738,791 739,791 740,793 741,795 742,796 743,797 744,797 745,799 746,800 747,800 748,800 749,801 750,802 751,803 752,803 753,805 754,806 755,807 756,808 757,810 758,810 759,811 760,812 761,814 762,815 763,815 764,817 765,818 766,819 767,819 768,820 769,821 770,822 771,822 772,823 773,823 774,825 775,826 776,827 777,829 778,830 779,831 780,832 781,834 782,834 783,835 784,836 785,836 786,837 787,838 788,840 789,840 790,841 791,843 792,843 793,844 794,846 795,846 796,847 797,847 798,847 799,849 800,851 801,852 802,852 803,853 804,853 805,855 806,855 807,855 808,856 809,856 810,856 811,857 812,858 813,859 814,861 815,863 816,863 817,864 818,865 819,867 820,868 821,869 822,870 823,872 824,874 825,875 826,876 827,877 828,877 829,879 830,880 831,880 832,881 833,882 834,884 835,884 836,884 837,886 838,888 839,889 840,891 841,893 842,894 843,895 844,896 845,897 846,898 847,900 848,901 849,902 850,902 851,903 852,903 853,906 854,907 855,908 856,908 857,908 858,909 859,909 860,910 861,912 862,914 863,915 864,915 865,915 866,917 867,917 868,918 869,918 870,919 871,921 872,921 873,922 874,923 875,924 876,925 877,925 878,927 879,929 880,929 881,929 882,930 883,931 884,932 885,934 886,935 887,935 888,936 889,938 890,939 891,940 892,941 893,942 894,943 895,943 896,944 897,946 898,946 899,946 900,947 901,947 902,948 903,949 904,950 905,951 906,953 907,956 908,957 909,959 910,959 911,960 912,960 913,962 914,962 915,963 916,963 917,964 918,964 919,964 920,965 921,966 922,966 923,966 924,966 925,967 926,967 927,969 928,971 929,971 930,972 931,974 932,976 933,977 934,979 935,981 936,981 937,982 938,983 939,983 940,983 941,984 942,986 943,988 944,990 945,991 946,993 947,995 948,995 949,996 950,997 951,998 952,999 953,1001 954,1003 955,1003 956,1004 957,1005 958,1007 959,1009 960,1010 961,1011 962,1013 963,1014 964,1015 965,1017 966,1019 967,1020 968,1021 969,1023 970,1024 971,1025 972,1026 973,1027 974,1027 975,1028 976,1030 977,1031 978,1032 979,1033 980,1034 981,1035 982,1036 983,1038 984,1039 985,1040 986,1042 987,1044 988,1044 989,1044 990,1045 991,1045 992,1046 993,1046 994,1046 995,1046 996,1047 997,1047 998,1047 999,1048 1000,1050".split(' ').map(p => p.split(',').map(Number));
+  const W = 640, H = 300, L = 56, R = 16, T = 14, B = 40, xm = pts[pts.length - 1][0], ym = Math.max(...pts.map(p => p[1])) * 1.1;
+  if (!(ym > 0)) return;
+  const X = x => L + x / xm * (W - L - R), Y = y => H - B - y / ym * (H - T - B);
+  const nice = (m, k) => { const r = m / k, g = Math.pow(10, Math.floor(Math.log10(r))), f = r / g; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * g; };
+  const step = nice(ym, 5), xs = Math.max(1, nice(xm, 6)); let s = '';
+  for (let y = 0; y <= ym; y += step) s += `<line x1="${L}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--line)"/><text x="${L - 8}" y="${Y(y) + 4}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="var(--mono)">${y}</text>`;
+  for (let x = 0; x <= xm; x += xs) s += `<text x="${X(x)}" y="${H - B + 18}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="var(--mono)">${x}</text>`;
+  s += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" font-size="12" fill="var(--muted)">PCBO iteration (1,000 particles each)</text>`;
+  s += `<text x="14" y="${(T + H - B) / 2}" text-anchor="middle" font-size="12" fill="var(--muted)" transform="rotate(-90 14 ${(T + H - B) / 2})">components found</text>`;
+  s += `<polyline points="${pts.map(p => X(p[0]) + ',' + Y(p[1])).join(' ')}" fill="none" stroke="var(--spoon)" stroke-width="3" stroke-linejoin="round"/>`;
+  if (pts.length <= 40) pts.forEach(p => { s += `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3" fill="var(--spoon)"/>`; });
+  const e = pts[pts.length - 1]; s += `<text x="${X(e[0]) - 8}" y="${Y(e[1]) - 10}" text-anchor="end" font-size="13" fill="var(--ink)" font-family="var(--mono)">${e[1]}</text>`;
+  svg.innerHTML = s;
+})();
+</script>
+<script>
+(function() {
+  const svg = document.getElementById('curve'), pts = "0,0 5000,7 10000,13 15000,16 20000,21 25000,26 30000,28 35000,31 40000,33 45000,36 50000,39 55000,45 60000,49 65000,53 70000,58 75000,63 80000,70 85000,74 90000,77 95000,79 100000,83 105000,87 110000,92 115000,93 120000,96 125000,100 130000,104 135000,107 140000,110 145000,112 150000,117 155000,118 160000,120 165000,125 170000,131 175000,133 180000,135 185000,140 190000,143 195000,146 200000,150 205000,155 210000,157 215000,159 220000,162 225000,167 230000,172 235000,177 240000,181 245000,187 250000,188 255000,194 260000,198 265000,201 270000,205 275000,212 280000,218 285000,221 290000,225 295000,231 300000,237 305000,242 310000,246 315000,250 320000,254 325000,257 330000,260 335000,266 340000,270 345000,273 350000,277 355000,281 360000,285 365000,288 370000,294 375000,296 380000,301 385000,303 390000,307 395000,309 400000,312 405000,314 410000,317 415000,322 420000,327 425000,330 430000,332 435000,336 440000,339 445000,342 450000,346 455000,349 460000,352 465000,357 470000,361 475000,364 480000,368 485000,372 490000,376 495000,381 500000,385 505000,388 510000,392 515000,395 520000,400 525000,405 530000,410 535000,415 540000,420 545000,425 550000,429 555000,433 560000,438 565000,442 570000,445 575000,449 580000,454 585000,460 590000,463 595000,467 600000,472 605000,475 610000,479 615000,482 620000,484 625000,489 630000,493 635000,497 640000,501 645000,505 650000,510 655000,513 660000,514 665000,518 670000,520 675000,526 680000,528 685000,533 690000,536 695000,541 700000,543 705000,548 710000,552 715000,556 720000,559 725000,563 730000,564 735000,568 740000,569 745000,572 750000,576 755000,580 760000,583 765000,585 770000,592 775000,595 780000,597 785000,601 790000,605 795000,609 800000,611 805000,614 810000,618 815000,622 820000,625 825000,629 830000,633 835000,637 840000,640 845000,644 850000,647 855000,651 860000,654 865000,656 870000,659 875000,664 880000,669 885000,673 890000,676 895000,678 900000,680 905000,684 910000,689 915000,692 920000,694 925000,698 930000,701 935000,705 940000,708 945000,711 950000,714 955000,716 960000,719 965000,722 970000,726 975000,728 980000,732 985000,732 990000,738 995000,741 1000000,743 1005000,748 1010000,753 1015000,755 1020000,758 1025000,760 1030000,762 1035000,767 1040000,771 1045000,775 1050000,778 1055000,781 1060000,785 1065000,788 1070000,790 1075000,795 1080000,798 1085000,800 1090000,803 1095000,807 1100000,810 1105000,815 1110000,819 1115000,821 1120000,823 1125000,827 1130000,832 1135000,835 1140000,837 1145000,841 1150000,845 1155000,847 1160000,852 1165000,854 1170000,856 1175000,858 1180000,863 1185000,866 1190000,870 1195000,875 1200000,879 1205000,882 1210000,884 1215000,889 1220000,895 1225000,898 1230000,902 1235000,905 1240000,908 1245000,909 1250000,915 1255000,917 1260000,918 1265000,922 1270000,925 1275000,929 1280000,932 1285000,935 1290000,939 1295000,943 1300000,946 1305000,947 1310000,951 1315000,957 1320000,960 1325000,962 1330000,964 1335000,966 1340000,967 1345000,971 1350000,975 1355000,981 1360000,983 1365000,986 1370000,992 1375000,996 1380000,999 1385000,1003 1390000,1008 1395000,1013 1400000,1019 1405000,1024 1410000,1027 1415000,1031 1420000,1033 1425000,1038 1430000,1044 1435000,1045 1440000,1046 1445000,1047 1449545,1050".split(' ').map(p => p.split(',').map(Number));
+  const W = 640, H = 300, L = 56, R = 16, T = 14, B = 40, xm = pts[pts.length - 1][0], ym = Math.max(...pts.map(p => p[1])) * 1.1;
+  if (!(ym > 0)) return;
+  const X = x => L + x / xm * (W - L - R), Y = y => H - B - y / ym * (H - T - B);
+  const nice = (m, k) => { const r = m / k, g = Math.pow(10, Math.floor(Math.log10(r))), f = r / g; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * g; };
+  const fmt = x => x >= 1e6 ? (x / 1e6).toFixed(x % 1e6 ? 1 : 0) + 'M' : x >= 1e3 ? (x / 1e3) + 'k' : String(x);
+  const step = nice(ym, 5), xs = nice(xm, 6); let s = '';
+  for (let y = 0; y <= ym; y += step) s += `<line x1="${L}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--line)"/><text x="${L - 8}" y="${Y(y) + 4}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="var(--mono)">${y}</text>`;
+  for (let x = 0; x <= xm; x += xs) s += `<text x="${X(x)}" y="${H - B + 18}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="var(--mono)">${fmt(x)}</text>`;
+  s += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" font-size="12" fill="var(--muted)">oracle calls</text>`;
+  s += `<text x="14" y="${(T + H - B) / 2}" text-anchor="middle" font-size="12" fill="var(--muted)" transform="rotate(-90 14 ${(T + H - B) / 2})">components found</text>`;
+  s += `<polyline points="${pts.map(p => X(p[0]) + ',' + Y(p[1])).join(' ')}" fill="none" stroke="var(--mug)" stroke-width="3" stroke-linejoin="round"/>`;
+  const e = pts[pts.length - 1]; s += `<circle cx="${X(e[0])}" cy="${Y(e[1])}" r="4.5" fill="var(--mug)"/><text x="${X(e[0]) - 8}" y="${Y(e[1]) - 10}" text-anchor="end" font-size="13" fill="var(--ink)" font-family="var(--mono)">${e[1]}</text>`;
+  svg.innerHTML = s;
+})();
+</script>
+
+<section id="gallery"><div class="wrap">
+  <h2>Gallery</h2>
+  <p class="note">One scene per disconnected component found by the 1,000-particle run, in order of discovery: the first state of each component that PCBO reached. Each card shows a perspective view and a side elevation level with the table.</p>
+  <p class="note">Each card is the first stable state PCBO reached in one component: a known component of the reference, or a new one that joined none. Left: perspective view across the mug's handle, on the table (2 cm checker grid). Right: side elevation level with the table; the dark line is the table's level, and the view is perpendicular to the mug's axis (or to the spoon's when the mug is upright or inverted), so tilts appear at their true angles.</p>
+  <div class="legend"><span><i style="background:var(--mug)"></i>mug</span><span><i style="background:var(--spoon)"></i>spoon</span><span>mug angle: axis from vertical (0 upright, 90 on its side, 180 inverted)</span><span>spoon angle: long axis from horizontal</span></div>
+  <h3 style="font-size:19px;margin:0 0 10px">Large known scenes reached</h3>
+  <div class="ident" id="ident"></div>
+  <div class="controls" role="group" aria-label="Filter poses">
+    <div class="group" id="g-fam"><span>Mug</span>
+      <button class="chip" data-v="all" aria-pressed="true">All</button><button class="chip" data-v="U" aria-pressed="false">Upright</button><button class="chip" data-v="I" aria-pressed="false">Inverted</button><button class="chip" data-v="S" aria-pressed="false">On its side</button><button class="chip" data-v="T" aria-pressed="false">Tilted</button></div>
+    <div class="group" id="g-kind"><span>Place</span>
+      <button class="chip" data-v="all" aria-pressed="true">All</button><button class="chip" data-v="C" aria-pressed="false">Known</button><button class="chip" data-v="P" aria-pressed="false">New</button></div>
+    <div class="group"><span>Order</span>
+      <select id="sort" aria-label="Order"><option value="disc">Order of discovery</option><option value="size">Component size first</option></select></div>
+    <div class="count" id="count"></div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="pager" id="pager"><button class="btn" type="button" id="pg-prev" aria-label="Previous nine poses">← Previous</button><span id="pg-info"></span><button class="btn" type="button" id="pg-next" aria-label="Next nine poses">Next →</button></div>
+</div></section>
+
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-labelledby="lb-title">
+  <div class="box">
+    <div class="bar"><h3 id="lb-title"></h3><button class="btn" id="lb-prev" aria-label="Previous pose">← Previous</button><button class="btn" id="lb-next" aria-label="Next pose">Next →</button><button class="btn" id="lb-close">Close</button></div>
+    <div class="views"><figure><img id="lb-a" alt="Perspective view"><figcaption>Perspective, across the handle, 28° above the table</figcaption></figure><figure><img id="lb-b" alt="Side elevation"><figcaption>Side elevation level with the table (dark line: table level)</figcaption></figure></div>
+    <dl id="lb-dl"></dl>
+  </div>
+</div>
+
+<section id="formulation"><div class="wrap">
+  <h2>Formulation</h2>
+  <p class="note">The PCBO that produced these poses, as the code runs it: <code>code/mug_spoon/pcbo3d.cpp</code>, configuration used for the results above. Every definition is the one the code computes.</p>
+  <div class="doc">
+    <nav class="toc" aria-label="Sections"><ol>
+<li><a href="#s1">Spaces</a></li>
+<li><a href="#s2">Objective and oracle cost</a></li>
+<li><a href="#s3">The metric</a></li>
+<li><a href="#s4">Consensus points</a></li>
+<li><a href="#s5">The dynamics</a></li>
+<li><a href="#s6">The screen before the oracle call (PRESCREEN=1)</a></li>
+<li><a href="#s7">One iteration</a></li>
+<li><a href="#s10">Parameters of the configuration</a></li>
+<li><a href="#s11">How the components are counted</a></li>
+<li><a href="#s13">Open points</a></li>
+    </ol></nav>
+    <article>
+<p>This note describes the PCBO that runs in <code>code/mug_spoon/pcbo3d.cpp</code> (binary <code>pcbo3d_v37</code> and later), in the configuration that performed best on 22 Oct 2026. Every definition below is the one the code computes. Parameter names in <code>typewriter</code> are the environment variables of <code>pcbo3d</code>; their values in the best configuration are collected in Section 10.</p>
+<p>The problem is stated generically: two rigid bodies, finitely many contact constraints, a static-equilibrium residual. The mug and spoon is the instance.</p>
+<h2 id="s1">1. Spaces</h2>
+<h3>1.1 Configuration space</h3>
+<p>A configuration is a pair of rigid poses, the mug $M$ and the spoon $S$:</p>
+<div class="math">$$
+x = (p_M, q_M, p_S, q_S) \in X = (\mathbb{R}^3 \times S^3)^2 ,
+$$</div>
+<p>with $p$ positions and $q$ unit quaternions ($\pm q$ identified). Gravity and the table are invariant under the planar Euclidean group</p>
+<div class="math">$$
+G = SE(2) = \{\text{translations in } (x,y),\ \text{rotations about } e_z\},
+$$</div>
+<p>acting on both bodies at once. The physically distinct configurations form the quotient $X/G$, of dimension $12 - 3 = 9$.</p>
+<p><strong>Gauge-free distance.</strong> For $a, b \in X$ let $g_{ab} \in G$ align $b$ to $a$: it rotates $b$ about $e_z$ by the yaw of $R_{q_M^b} R_{q_M^a}^{\top}$ and translates it so that the mugs' horizontal positions coincide (<code>gauge_align</code>). With $L = 0.1\,$m per radian (<code>L_TWIST</code>),</p>
+<div class="math">$$
+d(a,b) = \Big( \sum_{B \in \{M,S\}} \|p_B^a - p_B^{g_{ab} b}\|^2 + L^2\, \theta(q_B^a, q_B^{g_{ab} b})^2 \Big)^{1/2},
+\qquad \theta(q,q') = 2\arccos|\langle q, q'\rangle| .
+$$</div>
+<p>This is <code>gdist</code>. All distances between landed configurations ("images") below are $d$.</p>
+<h3>1.2 Constraints, strata and the feasible set</h3>
+<p>The model has finitely many geometric features $j = 1,\dots,F$ ($F = 413$): gaps $g_j(x)$ between pairs of geoms (mug parts, spoon parts, the table). They are signed distances, exact for the curved pairs. A feature is <strong>active</strong> when $g_j(x) \le b$ ($b = 2\cdot10^{-5}$, <code>band</code>). A configuration is <strong>valid</strong> when no gap is below $-\epsilon_{\text{pen}}$ ($\epsilon_{\text{pen}} = 2\cdot 10^{-7}$) and at least one active contact joins mug and spoon.</p>
+<p>For a set $H$ of held features, the <strong>contact stratum</strong> is</p>
+<div class="math">$$
+\Sigma_H = \{x : g_j(x) = 0,\ j \in H\}, \qquad \dim(\Sigma_H/G) = 9 - \operatorname{rank}\big(\nabla g_H\big|_{\text{gauge}^\perp}\big).
+$$</div>
+<p><strong>Equilibrium residual.</strong> At a valid $x$ with active contacts $c = 1,\dots,n_c$, each with normal $n_c$ and friction coefficient $\mu = 10$, the circular friction cone is replaced by the inscribed polygonal cone with $K = 16$ generators $\{f_{c,k}\}$. The residual is the non-negative least-squares value</p>
+<div class="math">$$
+V_{\text{in}}(x) = \min_{\lambda \ge 0}\ \Big\| \sum_{c,k} \lambda_{c,k}\, W_{c,k}(x) - b \Big\| ,
+$$</div>
+<p>where $W_{c,k} \in \mathbb{R}^{12}$ is the wrench of generator $f_{c,k}$ on both bodies (force and torque about each centre of mass) and $b$ is the wrench that balances gravity, in units $F^\ast = 0.3 \cdot 9.81\,$N and $L^\ast = 0.1\,$m. It is computed by Lawson–Hanson NNLS with a KKT check; $V_{\text{in}}$ is the residual norm. Because the cone is inscribed, $V_{\text{in}} = 0$ certifies an equilibrium. A circumscribed cone gives $V_{\text{out}} \le V$, which certifies infeasibility when positive.</p>
+<ul><li><strong>Exact:</strong> $V_{\text{in}}(x) \le 10^{-10}$.</li><li><strong>Feasible set:</strong> $\mathcal{F} = \{x \text{ valid} : V_{\text{in}}(x) \le 10^{-10}\}$.</li><li><strong>Flat (robust) set:</strong> $\mathcal{F}_{\text{flat}} = \{x \in \mathcal{F} : \Phi(x) \ge \tfrac12\}$. Here $\Phi(x)$ is the share of $K_f = 8$ random unit tangent directions $u$ of the active stratum (gauge excluded) along which the step $x \mapsto \text{proj}_{\Sigma_H}(x \oplus \rho u)$, with $\rho = 10^{-5}$, stays exact (<code>flat_share</code>).</li></ul>
+<p>The objects of interest are the <strong>connected components of $\mathcal{F}_{\text{flat}}/G$</strong> ("scenes"). The landed flat states have intrinsic dimension about 3-4: the Levina–Bickel MLE gives 3.6-4.1 on all flat landings and 2.8-3.1 within the largest component. This matches strata of dimension $9 - r$ for held ranks $r = 5,\dots,8$.</p>
+<h3>1.3 The search space and the landing map</h3>
+<p>PCBO does not move in $X$. It moves in the input space of the <strong>landing law</strong>:</p>
+<div class="math">$$
+Z = SO(3) \times [0, \bar h] \times SO(3) \times B, \qquad \bar h = 0.02\,\text{m}, \quad B = [-0.2, 0.2]^2 \times [0, 0.2]\ \text{m},
+$$</div>
+<p>a 10-dimensional manifold with boundary. A point $z = (q_M, h, q_S, p_S)$ fixes the mug's orientation, its lowest point at height $h$ above the table, the spoon's orientation and origin. The mug's horizontal position is the origin, which fixes the translational gauge. The reference law $\mu_0$ on $Z$ is uniform: Haar on both $SO(3)$ factors, uniform on $[0, \bar h]$ and on $B$.</p>
+<p><strong>Chart.</strong> At $z$ the normalised coordinates of a nearby $z'$ are</p>
+<div class="math">$$
+z' \ominus z = \Big( \tfrac{1}{\pi}\log(q_M' q_M^{-1}),\ \tfrac{h'-h}{\bar h},\ \tfrac{1}{\pi}\log(q_S' q_S^{-1}),\ \tfrac{p_S'-p_S}{0.4} \Big) \in \mathbb{R}^{10}
+$$</div>
+<p>(<code>in_diff</code>; $\log$ is the rotation vector). A step $s \in \mathbb{R}^{10}$ is applied by $z \oplus s$: left multiplication by $\exp(\pi s_{\text{rot}})$ on each orientation, and reflection at the boundary for $h$ and $p_S$ (<code>in_step</code>). Norms $|\cdot|$ of steps are taken in these coordinates.</p>
+<p><strong>Landing map</strong> $\Lambda_r : Z \to X \cup \{\varnothing\}$, for a target rank $r \in \{5,6,7,8\}$:</p>
+<ol><li>Form the initial pose $x_0(z)$.</li><li>Order the features by increasing gap at $x_0$, and hold, in that order, those whose gradient raises the rank of the held set together with the gauge directions. A row raises it when its component orthogonal to the span exceeds $0.05$. Continue until rank $r$; every penetrating feature is also held.</li><li>Project $x_0$ onto $\Sigma_H$ by damped Gauss–Newton (minimum-norm steps).</li><li>If new penetrations appear, add them to $H$ and project again, up to 4 rounds.</li><li>If no round succeeds, the landing <strong>fails</strong>: $\Lambda_r(z) = \varnothing$, at no oracle cost.</li></ol>
+<p>$\Lambda_r$ is piecewise smooth and <strong>many-to-one</strong>: whole basins of $Z$ collapse onto one image. This fact governs most of the design below. Each particle $i$ keeps a fixed rank $r_i = 5 + (i \bmod 4)$; write $\Lambda_i = \Lambda_{r_i}$ and $x_i = \Lambda_i(z_i)$ (the input pose if the landing failed).</p>
+<h2 id="s2">2. Objective and oracle cost</h2>
+<div class="math">$$
+E(z) = \begin{cases} \min\{V_{\text{in}}(\Lambda(z)),\ 2\} &amp; \Lambda(z) \text{ valid},\\ 2 &amp; \text{failed, penetrating, or no mutual contact.}\end{cases}
+$$</div>
+<p>Every flat state, found long ago or just now, is a global minimiser ($E = 0$). That is why plain PCBO concentrates on what it has found (Section 9).</p>
+<p><strong>Cost.</strong> One oracle call per evaluated landing. For an exact landing, add the flatness test, run <strong>sequentially</strong> (<code>FLAT_EARLY=1</code>): the same directions are drawn in the same order, and the test stops at 4 exact steps (flat) or 5 failed ones (not flat). Steps whose projection fails are not evaluated. The verdict is identical to the full 8-step test (checked: 1,329 of 1,329 exact landings agree). An exact landing costs about $4.8$ calls instead of $9$. Failed landings and all geometry cost nothing. <strong>Budgets are counted in oracle calls.</strong></p>
+<h2 id="s3">3. The metric</h2>
+<p>The metric needs only a metric space $(X, d_X)$, a group $G$ of isometries that leaves the constraints and the objective unchanged, and the objective $E$. It satisfies the metric axioms, and it keeps three jobs apart: geometry (the metric), which points are solutions (the objective, used only in the consensus weights, Section 4), and where the next evaluation should go (diversity, Section 6).</p>
+<h3>3.1 Quotient placement metric</h3>
+<div class="math">$$d_X(a,b)^2 = \sum_B \tfrac1n \int \lvert a_B(y) - b_B(y)\rvert^2\, d\rho_B(y) = \sum_B \tfrac1n\Big(\lvert c^a_B - c^b_B\rvert^2 + \operatorname{tr}\big((R^a_B - R^b_B)\,\Sigma_B\,(R^a_B - R^b_B)^\top\big)\Big),$$</div>
+<p>the root-mean-square displacement of each body's matter ($\rho_B$ its mass distribution, $c_B$ its centre of mass, $\Sigma_B$ its second moment; every body weighted equally). The table's symmetry group $G = SE(2)$ (rotation about the vertical, horizontal translation) is divided out exactly:</p>
+<div class="math">$$d_G(a,b) = \min_{g\in G} d_X(a, g b),\qquad \psi^\ast = \operatorname{atan2}(C_{01} - C_{10},\ C_{00} + C_{11}),\quad C = \sum_B \tfrac1n\big(R^b_B\Sigma_B R^{a\top}_B + (c^b_B - \bar b)(c^a_B - \bar a)^\top\big),$$</div>
+<p>a planar Procrustes problem with a closed-form minimiser. $d_G$ is a metric on scenes: symmetric, zero only for symmetric copies of the same scene, and the triangle inequality holds exactly because the minimum over $G$ is global.</p>
+<h3>3.2 Contact term</h3>
+<div class="math">$$d(a,b)^2 = d_G(a,b)^2 + \lambda^2\,\lvert H_a \,\triangle\, H_b\rvert,$$</div>
+<p>with $H$ the set of active contact constraints (gap within the contact band) and $\lambda$ the bodies' mean RMS radius (4.66 cm): gaining or losing a contact counts as much as moving a body by its own size. As the $\ell^2$ sum of $d_G$ and the square root of a Hamming distance, $d$ is a metric, unchanged by the table's symmetry. On the solution set, the corresponding path metric is an extended metric whose infinite distances are exactly the disconnected components.</p>
+<h3>3.3 Diversity and the archive</h3>
+<p>Let $A_t$ be every configuration evaluated so far. The novelty of a proposal $x$ is $\nu_t(x) = \min_{y \in A_t} d(x, y)$, and the archive's spacing $\varepsilon_t$ is the median distance of its points to their nearest neighbours. A proposal is evaluated with probability $\min\{1, (\nu_t(x)/\varepsilon_t)^m\}$, $m = 2$ (Section 6): an $\varepsilon$-cover of the solution set built online. The crowding of an evaluated state $j$ is $G_j = -\log(nn_j/\varepsilon_t)$, $nn_j$ its distance to its nearest other archive point (used by the consensus, Section 4). In the dynamics of Section 5 the conformal factor is 1, and the noise floor is $\varepsilon_t$ (converted to inputs by the length scale $s$), so it shrinks as the cover gets finer.</p>
+<h2 id="s4">4. Consensus points</h2>
+<p><strong>Feasibility first, crowding second</strong> (CB2O, Fornasier et al.). Each particle's consensus averages only feasible particles, those at exact equilibria ($E \le 10^{-10}$), with weights $\exp(-\alpha\,[D_{ij}^2 + G_j])$, $G_j$ the crowding of Section 3.3, so the consensus leans towards sparsely explored solutions; when no feasible particle is within reach, the weights of Section 4.1 apply. $\alpha$ is chosen per particle so that each consensus averages $8N/128$ particles (62 for $N = 1000$), which keeps the kernel fixed as $N$ grows.</p>
+<h3>4.1 Polarised weights (Fornasier–Sun, arXiv 2403.06662, eq. (16))</h3>
+<p>Build the $k$-nearest-neighbour graph ($k = 8$) on the images $\{x_j\}$. Edge lengths are conformal,</p>
+<div class="math">$$
+\ell_{ij} = \frac{d(x_i,x_j)}{s}, \qquad s = 0.0465\ \text{m},
+$$</div>
+<p>and $D_{ij}$ is the shortest-path (graph-geodesic) distance, following Bernstein–de Silva–Langford–Tenenbaum. Particle $i$ weights particle $j$ by</p>
+<div class="math">$$
+\omega_{ij} \propto \exp\!\Big(-\alpha\, A(j, i)\Big), \qquad A(j,i) = \frac{1}{\varkappa} E_j\,(E_i + \vartheta) + D_{ij}^2 ,
+$$</div>
+<p>with $\alpha = 10$, $\vartheta = 0.05$ (<code>VTH</code>), $\varkappa = 0.01$ (<code>VKAP</code>), normalised over $j$. As in PCBO, $\arg\min_j A(j,i)$ is close to the minimiser nearest $i$.</p>
+<h3>4.2 Continuous consensus point (<code>CONS_CONT=1</code>)</h3>
+<p>The weighted mean is taken in the chart at $z_i$ (one step of a weighted Karcher mean):</p>
+<div class="math">$$
+m_i = z_i \oplus \sum_j \omega_{ij}\, (z_j \ominus z_i).
+$$</div>
+<p>It is a point of $Z$, not one of the particles. A medoid consensus can only move to existing particles, so repulsion between medoids cannot reach empty space. The continuous point can.</p>
+<h3>4.3 Balanced repulsion of the consensus points (Massimo's (b), in the form of Fornasier–Hütter)</h3>
+<p>The consensus points $C = (c_1,\dots,c_N)$ minimise</p>
+<div class="math">$$
+\mathcal{B}(C) = \sum_i |c_i \ominus m_i|^2 + \beta \Big[\, \sum_i \mathbb{E}_{y\sim\omega}\, |c_i \ominus y|^{p} - \frac{1}{2(N-1)} \sum_{i \ne j} |c_i \ominus c_j|^{p} \Big], \qquad p = 1,\ \beta = 0.5 \ (\texttt{BF\_MU}).
+$$</div>
+<p>Up to the normalisation $N$ against $N-1$ and an additive constant, the bracket is $\tfrac{N}{2}$ times the energy distance between the empirical measure of the consensus points and a target $\omega$:</p>
+<div class="math">$$
+\mathcal{E}_p\big(\tfrac1N\textstyle\sum_i\delta_{c_i}, \omega\big) = \frac{2}{N}\sum_i \mathbb{E}_\omega|c_i - y|^p - \frac{1}{N^2}\sum_{i,j}|c_i - c_j|^p - \mathbb{E}_{\omega\otimes\omega}|y - y'|^p ,
+$$</div>
+<p>the MMD with the conditionally negative definite kernel $-|\cdot|^p$, $1 \le p &lt; 2$. By Fornasier–Hütter (arXiv 1310.1120), the balanced form, attraction to $\omega$ and repulsion among the points with the same kernel, has $\omega$ as its unique minimiser in the limit. Repulsion alone has no target. The target is Massimo's suggestion (d), "uniform on the hull of the found solutions":</p>
+<div class="math">$$
+\omega = \text{law of } z_a \oplus t\,(z_b \ominus z_a), \qquad z_a, z_b \sim \mathcal{U}(\mathcal{Z}^{\text{flat}}_t),\ t \sim \mathcal{U}[0,1],
+$$</div>
+<p>where $\mathcal{Z}^{\text{flat}}_t$ are the inputs that produced flat landings so far (a pool of 256 points per iteration). $\mathcal{B}$ is decreased by 20 Jacobi gradient steps of size $\eta = 0.05$, each coordinate clipped:</p>
+<div class="math">$$
+c_i \leftarrow c_i \oplus \operatorname{clip}\Big(-\eta\Big[\, 2(c_i \ominus m_i) + \beta\, \mathbb{E}_\omega \nabla|c_i \ominus y|^p - \frac{\beta}{N-1}\sum_{j\ne i} \nabla |c_i \ominus c_j|^p \Big]\Big), \qquad \nabla|v|^p = p|v|^{p-2}v .
+$$</div>
+<p>Write $\ell_i = |c_i \ominus z_i|$ and $u_i = (c_i \ominus z_i)/\ell_i$.</p>
+<h2 id="s5">5. The dynamics</h2>
+<h3>5.1 The SDE (chart coordinates, frozen metric)</h3>
+<div class="math">$$
+dZ^i_t = \lambda\, \ell_i\, u_i\, dt \;+\; \sigma\, \operatorname{diag}\!\big(|\ell_i u_{i,k}| + \tilde\kappa_t\big)_{k=1}^{10}\, dB^i_t ,
+\qquad X^i_t = \Lambda_i(Z^i_t),
+$$</div>
+<p>with $\lambda = 1$, $\sigma = 0.2$ and the noise floor $\tilde\kappa_t = \varepsilon_t / 0.2\,\text{m}$, the archive spacing of Section 3.3 in input units: it shrinks as the cover of the solution set gets finer (Fornasier's adaptive floor).</p>
+<ul><li><strong>Drift:</strong> towards the particle's own repelled consensus point, as in PCBO.</li><li><strong>Anisotropic noise</strong> (<code>ANISO=1</code>; Carrillo et al. 2019, Fornasier et al. 2021): each coordinate's amplitude is its distance to the consensus point, plus a floor. A particle that shares a find's mug pose varies mainly the spoon.</li><li><strong>The floor</strong> is Massimo's suggestion (a), $\sigma(|X - X_\alpha| + \kappa)$, with $\kappa$ set from the join radius: $\kappa_{\text{img}} = 0.125\,$m, where the planner joins connected pairs about half the time.</li></ul>
+
+<h3>5.2 The time step (Euler–Maruyama proposal)</h3>
+<p>With $\Delta t = 0.15$ and $\xi \sim \mathcal{N}(0, I_{10})$,</p>
+<div class="math">$$
+s_i = \lambda \Delta t\, \ell_i u_i + \sigma \sqrt{\Delta t}\, \big(|\ell_i u_{i,k}| + \tilde\kappa_t\big)_k \odot \xi, \qquad s_i \leftarrow \operatorname{clip}_{[-0.5,0.5]}(s_i).
+$$</div>
+<h2 id="s6">6. The screen before the oracle call</h2>
+<p>A proposal is first moved along the particle's contact stratum, which needs no oracle call, and is then accepted for evaluation with probability $\min\{1, (\nu_t(x')/\varepsilon_t)^m\}$, $m = 2$: the distance $\nu_t$ of the proposed state $x'$ to everything evaluated so far, against the archive's spacing $\varepsilon_t$ (Section 3.3). If it is rejected, the noise is redrawn with the same drift, at most 50 times; after 50 rejections the last proposal is used. Only accepted moves cost oracle calls, so the screen decides where the calls go: towards states unlike any evaluated so far.</p>
+<h2 id="s7">7. One iteration</h2>
+<pre class="code"><code>for each particle i (in parallel):
+    land z_i at rank r_i; if valid: one oracle call -&gt; E_i;
+        if exact: sequential flatness test (&lt;= 8 calls) -&gt; flat or not
+add the evaluated states to the archive A_t (nearest-neighbour distances, spacing eps_t), the flat states and the flat inputs Z^flat
+crowding G_i &lt;- -log(nn_i / eps_t)
+graph: kNN on images, conformal edges, all-pairs shortest paths D
+weights omega_ij ~ exp(-alpha (E_j (E_i + theta) / varkappa + D_ij^2))
+m_i &lt;- z_i (+) sum_j omega_ij (z_j (-) z_i)
+C &lt;- 20 gradient steps on B(C)  (pull to m_i; energy distance to omega, the hull of Z^flat)
+for each particle i:
+    repeat up to 50 times:
+        s &lt;- drift + anisotropic noise (floor kappa), clipped
+        rescale s so that the image moves ~ min(T_max, s ||s_raw||)
+        land z_i (+) s geometrically; accept with probability min(1, (nu_t / eps_t)^m)
+    z_i &lt;- z_i (+) s</code></pre>
+<h2 id="s10">8. Parameters of the configuration</h2>
+<div class="tablewrap"><table><thead><tr><th></th><th>value</th><th>env</th></tr></thead><tbody>
+<tr><td>particles</td><td>1,000</td><td><code>NP</code></td></tr>
+<tr><td>ranks</td><td>5, 6, 7, 8 (fixed per particle)</td><td></td></tr>
+<tr><td>metric</td><td>quotient placement metric + contact term, $\lambda = 4.66$ cm</td><td><code>METRIC_AX=1 AX_STRATA=1</code></td></tr>
+<tr><td>consensus</td><td>CB2O, feasibility first ($E \le 10^{-10}$), crowding second; continuous consensus points</td><td><code>AX_CB2O=1 CONS_CONT=1</code></td></tr>
+<tr><td>effective sample size</td><td>62 per consensus ($8N/128$)</td><td><code>ESS=62</code></td></tr>
+<tr><td>repulsion and hull target</td><td>energy distance, $\beta = 0.5$ (scaled), target uniform on the found solutions</td><td><code>BF_MU=0.5 BF_SCALE=1 AX_TARGET=1</code></td></tr>
+<tr><td>dynamics</td><td>$\lambda = 1$, $\sigma = 0.2$, $dt = 0.15$, anisotropic noise, floor $=\varepsilon_t$</td><td><code>ANISO=1 AX_KEPS=1</code></td></tr>
+<tr><td>motion on the constraints</td><td>slides along the contact strata (stick and release)</td><td><code>STICKY=1 SLIDE_CONTINUE=1</code></td></tr>
+<tr><td>screen</td><td>novelty rule, $m = 2$, up to 50 proposals per move</td><td><code>PRESCREEN=1 MEXP=2 MAX_TRIES=50</code></td></tr>
+</tbody></table></div>
+<h2 id="s11">9. How the components are counted</h2>
+<p>The reference is a set of 2,498 components built from 10,386 flat states of random landings and 8,771 stable poses of Majid's, merged by checked joins: straight segments of exact equilibria, and a planner that slides along the contact strata and releases one contact at a time. PCBO's flat states are merged into this reference with the same settings (joins within 12 cm, up to 4 attempts per pair of groups, failed joins retried in reverse, passes until nothing more joins). A state joined to a reference component counts as that component; states that join no reference component and no other state form new components. Two states in different components are separated at the planner's resolution; separation is not proved.</p>
+<h2 id="s13">10. Open points</h2>
+<ul><li><strong>Separation.</strong> Two components are distinct at the planner's resolution; no certificate proves them separate.</li>
+<li><strong>The contact term at large $N$.</strong> Its value at 1,000 particles is being measured by the same run with and without it.</li>
+<li><strong>Model.</strong> With $\mu = 10$ the friction cones have a half-angle of about 84°, and the mug's wall is 24 flat boxes, so a few equilibria (a spoon held by its shaft tip in a crease between two wall facets) exist only in the model.</li>
+<li><strong>Mean field.</strong> With the screen and the slides along the strata, the scheme is a Markov chain whose proposal is the Euler step of Section 5; its mean-field limit is not established.</li></ul>
+<p><strong>Code:</strong> <code>code/mug_spoon/pcbo3d.cpp</code>, <code>landing3d.hpp</code>, <code>strata3d.hpp</code>, <code>join3d.hpp</code>, <code>oracle3d.hpp</code>, <code>geom3d.hpp</code>. <strong>Results:</strong> <code>code/results/mug_spoon/</code> (<code>pcbo_mechanics/</code>, <code>flat_early/</code>, <code>synthesis/</code>). <strong>Log:</strong> <code>Docs/majid/mug_spoon_results.md</code>.</p>
+    </article>
+  </div>
+</div></section>
+
+<footer><div class="wrap">Code: code/mug_spoon/pcbo3d.cpp, landing3d.hpp, strata3d.hpp, join3d.hpp, oracle3d.hpp; renderer code/mug_spoon/tools/render_poses.py. Results: code/results/mug_spoon/. Notes: Docs/majid/pcbo_mug_spoon_formulation.md, Docs/majid/mug_spoon_results.md.</div></footer>
+
+<script src="poses.js?v=n1050c1449545"></script>
+<script src="views_persp.js?v=n1050c1449545"></script>
+<script src="views_side.js?v=n1050c1449545"></script>
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] }, svg: { fontCache: 'global' }, options: { ignoreHtmlClass: 'nomath' } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg-full.js" defer></script>
+<script>
+(function () {
+  const P = window.POSES || [], VA = window.VIEWS_PERSP || [], VB = window.VIEWS_SIDE || [];
+  P.forEach((p, k) => { p.k = k; });
+  const famName = { U: 'Upright', I: 'Inverted', S: 'On its side', T: 'Tilted' };
+  const kindName = p => p.name ? p.name : (p.kind === 'C' ? 'Known component' : 'New component');
+  const deg = v => Math.round(v) + '°';
+  const state = { fam: 'all', kind: 'all', sort: 'disc', page: 0 }; const PER = 9;
+  let view = [];
+  const grid = document.getElementById('grid'), count = document.getElementById('count');
+  function card(p) {
+    const b = document.createElement('button'); b.className = 'card nomath'; b.type = 'button'; b.dataset.k = p.k;
+    b.setAttribute('aria-label', `Pose ${p.i}: ${kindName(p)}, mug ${famName[p.fam].toLowerCase()}`);
+    b.innerHTML = `<div class="pair"><img loading="lazy" alt="" src="${VA[p.k]}"><img loading="lazy" alt="" src="${VB[p.k]}"></div>
+      <div class="cap"><span class="num">#${p.i}</span><span class="tag">${famName[p.fam]}</span><span class="tag ${p.kind}">${p.kind === 'C' ? 'known' : 'new'}</span></div>
+      ${p.name ? `<div class="nm">${p.name}</div>` : ''}
+      <div class="ang">mug ${deg(p.mug)} · spoon ${deg(p.spoon)} · call ${p.call.toLocaleString('en-US')}</div>`;
+    b.addEventListener('click', () => open(view.indexOf(p)));
+    return b;
+  }
+  function render() {
+    view = P.filter(p => (state.fam === 'all' || p.fam === state.fam) && (state.kind === 'all' || p.kind === state.kind));
+    if (state.sort === 'size') view.sort((a, b) => (b.kind === 'C') - (a.kind === 'C') || b.p - a.p || a.i - b.i);
+    const pages = Math.max(1, Math.ceil(view.length / PER)); state.page = Math.min(Math.max(0, state.page), pages - 1);
+    const a = state.page * PER, slice = view.slice(a, a + PER);
+    const f = document.createDocumentFragment(); slice.forEach(p => f.appendChild(card(p)));
+    grid.replaceChildren(f);
+    count.textContent = view.length ? `components ${a + 1}–${a + slice.length} of ${view.length}` : 'none';
+    document.getElementById('pg-info').textContent = `page ${state.page + 1} of ${pages}`;
+    document.getElementById('pg-prev').disabled = state.page === 0; document.getElementById('pg-next').disabled = state.page >= pages - 1;
+  }
+  function chips(id, key) {
+    const g = document.getElementById(id);
+    g.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return;
+      g.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === c ? 'true' : 'false')); state[key] = c.dataset.v; state.page = 0; render(); });
+  }
+  chips('g-fam', 'fam'); chips('g-kind', 'kind');
+  document.getElementById('sort').addEventListener('change', e => { state.sort = e.target.value; state.page = 0; render(); });
+  document.getElementById('pg-prev').addEventListener('click', () => { state.page--; render(); document.getElementById('gallery').scrollIntoView({ block: 'start' }); });
+  document.getElementById('pg-next').addEventListener('click', () => { state.page++; render(); document.getElementById('gallery').scrollIntoView({ block: 'start' }); });
+  // identified components
+  const ident = document.getElementById('ident');
+  P.filter(p => p.name).forEach(p => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'nomath';
+    b.innerHTML = `<div class="pair"><img alt="" src="${VA[p.k]}"><img alt="" src="${VB[p.k]}"></div><h3>${p.name}</h3>
+      <div class="sub">${p.hits} of the checked states · first found at call ${p.call.toLocaleString('en-US')}<br>mug ${deg(p.mug)} from vertical · spoon ${deg(p.spoon)} from horizontal</div>`;
+    b.addEventListener('click', () => { view = P.slice(); open(view.indexOf(p)); });
+    ident.appendChild(b);
+  });
+  // lightbox
+  const lb = document.getElementById('lb'); let cur = -1, opener = null;
+  const fmt = (a, n) => a.map(v => v.toFixed(n)).join(', ');
+  function open(idx) {
+    if (idx < 0 || idx >= view.length) return; cur = idx; const p = view[idx];
+    if (lb.hidden) opener = document.activeElement;
+    document.getElementById('lb-title').textContent = `Pose ${p.i} · ${kindName(p)}`;
+    document.getElementById('lb-a').src = VA[p.k]; document.getElementById('lb-b').src = VB[p.k];
+    const x = p.pose; const rows = [
+      ['Component', p.kind === 'C' ? 'Known (a component of the reference)' + (p.name ? ` (${p.name})` : '') : 'New (joined no known component)'],
+      ['Mug', `${famName[p.fam]}; axis ${p.mug.toFixed(1)}° from vertical`],
+      ['Spoon', `long axis ${p.spoon.toFixed(1)}° from horizontal`],
+      ['Checked states in it', `${p.hits} of 1962`],
+      ['Found', `oracle call ${p.call.toLocaleString('en-US')} of 1,449,545`],
+      ['Contacts held', String(p.nc)],
+      ['Mug pose', `<code>p = (${fmt(x.slice(0, 3), 4)}) m, q = (${fmt(x.slice(3, 7), 4)})</code>`],
+      ['Spoon pose', `<code>p = (${fmt(x.slice(7, 10), 4)}) m, q = (${fmt(x.slice(10, 14), 4)})</code>`]];
+    document.getElementById('lb-dl').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    document.getElementById('lb-prev').disabled = idx === 0; document.getElementById('lb-next').disabled = idx === view.length - 1;
+    lb.hidden = false; document.getElementById('lb-close').focus();
+  }
+  function close() { lb.hidden = true; if (opener) opener.focus(); }
+  document.getElementById('lb-close').addEventListener('click', close);
+  document.getElementById('lb-prev').addEventListener('click', () => open(cur - 1));
+  document.getElementById('lb-next').addEventListener('click', () => open(cur + 1));
+  lb.addEventListener('click', e => { if (e.target === lb) close(); });
+  document.addEventListener('keydown', e => { if (lb.hidden) return;
+    if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') open(cur - 1); else if (e.key === 'ArrowRight') open(cur + 1); });
+  render();
+})();
+</script>
+
+</html>
