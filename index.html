@@ -440,8 +440,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] 
   }
   chips('g-fam', 'fam'); chips('g-kind', 'kind');
   document.getElementById('sort').addEventListener('change', e => { state.sort = e.target.value; state.page = 0; render(); });
-  document.getElementById('pg-prev').addEventListener('click', () => { state.page--; render(); document.getElementById('gallery').scrollIntoView({ block: 'start' }); });
-  document.getElementById('pg-next').addEventListener('click', () => { state.page++; render(); document.getElementById('gallery').scrollIntoView({ block: 'start' }); });
+  const keepGrid = () => { const t = grid.getBoundingClientRect().top; if (t < 0) window.scrollBy({ top: t - 8 }); };
+  document.getElementById('pg-prev').addEventListener('click', () => { state.page--; render(); keepGrid(); });
+  document.getElementById('pg-next').addEventListener('click', () => { state.page++; render(); keepGrid(); });
   // identified components
   const ident = document.getElementById('ident');
   P.filter(p => p.name).forEach(p => {
