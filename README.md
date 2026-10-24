@@ -1,6 +1,6 @@
 # Scene diversity generation
 
-Results page for polarised consensus-based optimisation (PCBO) generating diverse, statically stable mug-and-spoon scenes: every verified disconnected component of the set of strongly stable equilibria that one lean PCBO run reached in 1,000 iterations (1.45 million oracle calls), with discovery curves, the share of new components per iteration, and the mathematical description of the solver.
+Results page for polarised consensus-based optimisation (PCBO) generating diverse, statically stable mug-and-spoon scenes: every disconnected component of the set of strongly stable equilibria that one lean PCBO run reached in 1,000 iterations, with discovery curves, the share of new components per iteration, and the mathematical description of the solver.
 
 Live page: https://c0rmac.github.io/scene-diversity-generation/
 

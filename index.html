@@ -124,8 +124,6 @@ footer { border-top: 1px solid var(--line); padding-block: 22px 40px; font: 400 
   <p class="lede">How many distinct statically stable scenes of a mug and a spoon on a table a polarised consensus-based optimiser (PCBO) with 1,000 particles finds, and the mathematics of the solver.</p>
   <dl class="facts">
     <div><dt>Disconnected components found</dt><dd>1,050<small>scenes of strongly stable equilibria, each connection checked</small></dd></div>
-    <div><dt>Known / new</dt><dd>100 / 950<small>matching a reference component / joined to none</small></dd></div>
-    <div><dt>Oracle calls</dt><dd>1,449,545<small>one call per equilibrium check</small></dd></div>
     <div><dt>Particles</dt><dd>1,000<small>62,874 stable scenes landed on</small></dd></div>
   </dl>
   <nav class="jump"><a href="#results">Results</a><a href="#gallery">Gallery</a><a href="#formulation">Formulation</a></nav>
@@ -133,9 +131,9 @@ footer { border-top: 1px solid var(--line); padding-block: 22px 40px; font: 400 
 
 <section id="results"><div class="wrap">
   <h2>Results</h2>
-  <p style="max-width:72ch;margin:0 0 10px">A scene is a connected component of the set of strongly stable (flat) equilibria: two configurations belong to the same scene when a path of equilibria joins them. PCBO with 1,000 particles found <strong>1,050 disconnected components</strong> in 1,449,545 oracle calls: 100 of them are components of a reference set of known scenes, and 950 are new.</p>
+  <p style="max-width:72ch;margin:0 0 10px">A scene is a connected component of the set of strongly stable (flat) equilibria: two configurations belong to the same scene when a path of equilibria joins them. PCBO with 1,000 particles found <strong>1,050 disconnected components</strong> in 1,000 iterations.</p>
   <div class="charts2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;max-width:1100px"><div class="tablewrap" style="margin:0"><svg id="curve_it" viewBox="0 0 640 300" role="img" aria-label="Disconnected components found against iterations" style="width:100%;height:auto;display:block"></svg></div><div class="tablewrap" style="margin:0"><svg id="curve" viewBox="0 0 640 300" role="img" aria-label="Disconnected components found against oracle calls" style="width:100%;height:auto;display:block"></svg></div><div class="tablewrap" style="margin:0"><svg id="curve_nv" viewBox="0 0 640 300" role="img" aria-label="Share of discoveries that were new components, per 10 iterations" style="width:100%;height:auto;display:block"></svg></div></div><p class="note" style="max-width:1100px;margin:6px 0 0">Third chart: for each block of 10 iterations, the share of checked discoveries that were a component the run had not found before (every 32nd stable state is checked, about 2 per iteration). The dashed line is the whole run: 1050 new of 1962 checked (54%). A steady share means the run keeps finding new components at the same rate rather than returning to ones it already has.</p>
-  <p class="note">How the count is made: the flat states PCBO lands on are merged, by checked joins (paths of exact equilibria), into a reference of 2,498 components built from 10,386 random landings and Majid's 8,771 stable poses; states that join no reference component and no other state form new components. The count uses every 32nd of the 62,874 flat states (1,962 after re-checking their flatness), so the full run reaches at least this many. The merge ran until no further joins were found.</p>
+  <p class="note">How the count is made: two flat states belong to one component when a chain of checked joins (paths of exact equilibria) connects them. The joins may pass through 10,386 random landings and Majid's 8,771 stable poses, which serve only as stepping stones and are not counted. The count uses every 32nd of the 62,874 flat states (1,962 after re-checking their flatness), so the full run reaches at least this many. The merge ran until no further joins were found.</p>
 </div></section>
 <script>
 (function() {
@@ -147,11 +145,11 @@ footer { border-top: 1px solid var(--line); padding-block: 22px 40px; font: 400 
   for (let y = 0; y <= 100; y += 25) s += `<line x1="${L}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--line)"/><text x="${L - 8}" y="${Y(y) + 4}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="var(--mono)">${y}%</text>`;
   for (let x = 0; x <= xm; x += xs) s += `<text x="${X(x)}" y="${H - B + 18}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="var(--mono)">${x}</text>`;
   s += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" font-size="12" fill="var(--muted)">PCBO iteration (blocks of 10)</text>`;
-  s += `<text x="14" y="${(T + H - B) / 2}" text-anchor="middle" font-size="12" fill="var(--muted)" transform="rotate(-90 14 ${(T + H - B) / 2})">discoveries that are new</text>`;
+  s += `<text x="14" y="${(T + H - B) / 2}" text-anchor="middle" font-size="12" fill="var(--muted)" transform="rotate(-90 14 ${(T + H - B) / 2})">first finds (% of checked)</text>`;
   const avg = 100 * tn / tc; s += `<line x1="${L}" x2="${W - R}" y1="${Y(avg)}" y2="${Y(avg)}" stroke="var(--muted)" stroke-dasharray="5 4"/><text x="${W - R - 4}" y="${Y(avg) - 6}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="var(--mono)">${Math.round(avg)}% overall</text>`;
   const P = pts.map(p => [p[0] - 5, 100 * p[2] / p[1], p]);
   s += `<polyline points="${P.map(q => X(q[0]) + ',' + Y(q[1])).join(' ')}" fill="none" stroke="var(--spoon)" stroke-width="3" stroke-linejoin="round"/>`;
-  if (P.length <= 40) P.forEach(q => { s += `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="3.5" fill="var(--spoon)"><title>iterations ${q[2][0] - 9}-${q[2][0]}: ${q[2][2]} new of ${q[2][1]} checked (${Math.round(q[1])}%), ${(q[2][2] / 10).toFixed(1)} new components per iteration</title></circle>`; });
+  if (P.length <= 40) P.forEach(q => { s += `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="3.5" fill="var(--spoon)"><title>iterations ${q[2][0] - 9}-${q[2][0]}: ${q[2][2]} first finds of ${q[2][1]} checked (${Math.round(q[1])}%), ${(q[2][2] / 10).toFixed(1)} per iteration</title></circle>`; });
   svg.innerHTML = s;
 })();
 </script>
@@ -195,15 +193,11 @@ footer { border-top: 1px solid var(--line); padding-block: 22px 40px; font: 400 
 <section id="gallery"><div class="wrap">
   <h2>Gallery</h2>
   <p class="note">One scene per disconnected component found by the 1,000-particle run, in order of discovery: the first state of each component that PCBO reached. Each card shows a perspective view and a side elevation level with the table.</p>
-  <p class="note">Each card is the first stable state PCBO reached in one component: a known component of the reference, or a new one that joined none. Left: perspective view across the mug's handle, on the table (2 cm checker grid). Right: side elevation level with the table; the dark line is the table's level, and the view is perpendicular to the mug's axis (or to the spoon's when the mug is upright or inverted), so tilts appear at their true angles.</p>
+  <p class="note">Each card is the first stable state PCBO reached in one component. Left: perspective view across the mug's handle, on the table (2 cm checker grid). Right: side elevation level with the table; the dark line is the table's level, and the view is perpendicular to the mug's axis (or to the spoon's when the mug is upright or inverted), so tilts appear at their true angles.</p>
   <div class="legend"><span><i style="background:var(--mug)"></i>mug</span><span><i style="background:var(--spoon)"></i>spoon</span><span>mug angle: axis from vertical (0 upright, 90 on its side, 180 inverted)</span><span>spoon angle: long axis from horizontal</span></div>
-  <h3 style="font-size:19px;margin:0 0 10px">Large known scenes reached</h3>
-  <div class="ident" id="ident"></div>
   <div class="controls" role="group" aria-label="Filter poses">
     <div class="group" id="g-fam"><span>Mug</span>
       <button class="chip" data-v="all" aria-pressed="true">All</button><button class="chip" data-v="U" aria-pressed="false">Upright</button><button class="chip" data-v="I" aria-pressed="false">Inverted</button><button class="chip" data-v="S" aria-pressed="false">On its side</button><button class="chip" data-v="T" aria-pressed="false">Tilted</button></div>
-    <div class="group" id="g-kind"><span>Place</span>
-      <button class="chip" data-v="all" aria-pressed="true">All</button><button class="chip" data-v="C" aria-pressed="false">Known</button><button class="chip" data-v="P" aria-pressed="false">New</button></div>
     <div class="group"><span>Order</span>
       <select id="sort" aria-label="Order"><option value="disc">Order of discovery</option><option value="size">Component size first</option></select></div>
     <div class="count" id="count"></div>
@@ -382,7 +376,7 @@ for each particle i:
 <tr><td>screen</td><td>novelty rule, $m = 2$, up to 50 proposals per move</td><td><code>PRESCREEN=1 MEXP=2 MAX_TRIES=50</code></td></tr>
 </tbody></table></div>
 <h2 id="s11">9. How the components are counted</h2>
-<p>The reference is a set of 2,498 components built from 10,386 flat states of random landings and 8,771 stable poses of Majid's, merged by checked joins: straight segments of exact equilibria, and a planner that slides along the contact strata and releases one contact at a time. PCBO's flat states are merged into this reference with the same settings (joins within 12 cm, up to 4 attempts per pair of groups, failed joins retried in reverse, passes until nothing more joins). A state joined to a reference component counts as that component; states that join no reference component and no other state form new components. Two states in different components are separated at the planner's resolution; separation is not proved.</p>
+<p>Components are counted by checked joins: straight segments of exact equilibria, and a planner that slides along the contact strata and releases one contact at a time. Two of PCBO's flat states are in one component when a chain of such joins connects them. The joins may pass through 10,386 flat states of random landings and 8,771 stable poses of Majid's, which serve only as stepping stones and are not counted (joins within 12 cm, up to 4 attempts per pair of groups, failed joins retried in reverse, passes until nothing more joins). Two states in different components are separated at the planner's resolution; separation is not proved.</p>
 <h2 id="s13">10. Open points</h2>
 <ul><li><strong>Separation.</strong> Two components are distinct at the planner's resolution; no certificate proves them separate.</li>
 <li><strong>The contact term at large $N$.</strong> Its value at 1,000 particles is being measured by the same run with and without it.</li>
@@ -407,7 +401,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] 
   const P = window.POSES || [], VA = window.VIEWS_PERSP || [], VB = window.VIEWS_SIDE || [];
   P.forEach((p, k) => { p.k = k; });
   const famName = { U: 'Upright', I: 'Inverted', S: 'On its side', T: 'Tilted' };
-  const kindName = p => p.name ? p.name : (p.kind === 'C' ? 'Known component' : 'New component');
+  const kindName = p => 'Component';
   const deg = v => Math.round(v) + '°';
   const state = { fam: 'all', kind: 'all', sort: 'disc', page: 0 }; const PER = 9;
   let view = [];
@@ -416,15 +410,14 @@ window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] 
     const b = document.createElement('button'); b.className = 'card nomath'; b.type = 'button'; b.dataset.k = p.k;
     b.setAttribute('aria-label', `Pose ${p.i}: ${kindName(p)}, mug ${famName[p.fam].toLowerCase()}`);
     b.innerHTML = `<div class="pair"><img loading="lazy" alt="" src="${VA[p.k]}"><img loading="lazy" alt="" src="${VB[p.k]}"></div>
-      <div class="cap"><span class="num">#${p.i}</span><span class="tag">${famName[p.fam]}</span><span class="tag ${p.kind}">${p.kind === 'C' ? 'known' : 'new'}</span></div>
-      ${p.name ? `<div class="nm">${p.name}</div>` : ''}
-      <div class="ang">mug ${deg(p.mug)} · spoon ${deg(p.spoon)} · call ${p.call.toLocaleString('en-US')}</div>`;
+      <div class="cap"><span class="num">#${p.i}</span><span class="tag">${famName[p.fam]}</span></div>
+      <div class="ang">mug ${deg(p.mug)} · spoon ${deg(p.spoon)}</div>`;
     b.addEventListener('click', () => open(view.indexOf(p)));
     return b;
   }
   function render() {
     view = P.filter(p => (state.fam === 'all' || p.fam === state.fam) && (state.kind === 'all' || p.kind === state.kind));
-    if (state.sort === 'size') view.sort((a, b) => (b.kind === 'C') - (a.kind === 'C') || b.p - a.p || a.i - b.i);
+    if (state.sort === 'size') view.sort((a, b) => b.p - a.p || a.i - b.i);
     const pages = Math.max(1, Math.ceil(view.length / PER)); state.page = Math.min(Math.max(0, state.page), pages - 1);
     const a = state.page * PER, slice = view.slice(a, a + PER);
     const f = document.createDocumentFragment(); slice.forEach(p => f.appendChild(card(p)));
@@ -438,34 +431,23 @@ window.MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] 
     g.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return;
       g.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === c ? 'true' : 'false')); state[key] = c.dataset.v; state.page = 0; render(); });
   }
-  chips('g-fam', 'fam'); chips('g-kind', 'kind');
+  chips('g-fam', 'fam');
   document.getElementById('sort').addEventListener('change', e => { state.sort = e.target.value; state.page = 0; render(); });
   const keepGrid = () => { const t = grid.getBoundingClientRect().top; if (t < 0) window.scrollBy({ top: t - 8 }); };
   document.getElementById('pg-prev').addEventListener('click', () => { state.page--; render(); keepGrid(); });
   document.getElementById('pg-next').addEventListener('click', () => { state.page++; render(); keepGrid(); });
-  // identified components
-  const ident = document.getElementById('ident');
-  P.filter(p => p.name).forEach(p => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'nomath';
-    b.innerHTML = `<div class="pair"><img alt="" src="${VA[p.k]}"><img alt="" src="${VB[p.k]}"></div><h3>${p.name}</h3>
-      <div class="sub">${p.hits} of the checked states · first found at call ${p.call.toLocaleString('en-US')}<br>mug ${deg(p.mug)} from vertical · spoon ${deg(p.spoon)} from horizontal</div>`;
-    b.addEventListener('click', () => { view = P.slice(); open(view.indexOf(p)); });
-    ident.appendChild(b);
-  });
   // lightbox
   const lb = document.getElementById('lb'); let cur = -1, opener = null;
   const fmt = (a, n) => a.map(v => v.toFixed(n)).join(', ');
   function open(idx) {
     if (idx < 0 || idx >= view.length) return; cur = idx; const p = view[idx];
     if (lb.hidden) opener = document.activeElement;
-    document.getElementById('lb-title').textContent = `Pose ${p.i} · ${kindName(p)}`;
+    document.getElementById('lb-title').textContent = `Component ${p.i}`;
     document.getElementById('lb-a').src = VA[p.k]; document.getElementById('lb-b').src = VB[p.k];
     const x = p.pose; const rows = [
-      ['Component', p.kind === 'C' ? 'Known (a component of the reference)' + (p.name ? ` (${p.name})` : '') : 'New (joined no known component)'],
       ['Mug', `${famName[p.fam]}; axis ${p.mug.toFixed(1)}° from vertical`],
       ['Spoon', `long axis ${p.spoon.toFixed(1)}° from horizontal`],
       ['Checked states in it', `${p.hits} of 1962`],
-      ['Found', `oracle call ${p.call.toLocaleString('en-US')} of 1,449,545`],
       ['Contacts held', String(p.nc)],
       ['Mug pose', `<code>p = (${fmt(x.slice(0, 3), 4)}) m, q = (${fmt(x.slice(3, 7), 4)})</code>`],
       ['Spoon pose', `<code>p = (${fmt(x.slice(7, 10), 4)}) m, q = (${fmt(x.slice(10, 14), 4)})</code>`]];
