@@ -208,7 +208,7 @@ footer { border-top: 1px solid var(--line); padding-block: 22px 40px; font: 400 
 
 <section id="formulation"><div class="wrap">
   <h2>Formulation</h2>
-  <p class="note">The solver that produced the results above, as the code runs it: <code>code/mug_spoon/pcbo3d.cpp</code> (binary <code>pcbo3d_v97</code>) with the parameters of Section 9. Every definition below is the one the code computes.</p>
+  <p class="note">The solver that produced the results above, stated in general form. The problem instance (the mug and the spoon) and the values chosen for the run are in Section 10.</p>
   <div class="doc">
     <nav class="toc" aria-label="Sections"><ol>
 <li><a href="#s1">Spaces</a></li>
@@ -219,133 +219,159 @@ footer { border-top: 1px solid var(--line); padding-block: 22px 40px; font: 400 
 <li><a href="#s6">Consensus points</a></li>
 <li><a href="#s7">The dynamics</a></li>
 <li><a href="#s8">Convergence and the report</a></li>
-<li><a href="#s9">One iteration and the parameters</a></li>
-<li><a href="#s10">How the results are scored</a></li>
-<li><a href="#s11">Open points</a></li>
+<li><a href="#s9">One iteration</a></li>
+<li><a href="#s10">The instance and the run</a></li>
+<li><a href="#s11">How the results are scored</a></li>
+<li><a href="#s12">Open points</a></li>
     </ol></nav>
     <article>
-<p>The solver is a polarised consensus-based optimiser (PCBO, Fornasier–Sun, arXiv 2403.06662) with a continuous consensus point refined by an energy-distance functional (Fornasier–Hütter, arXiv 1310.1120): attraction to a target spread over the found solutions, repulsion from the other consensus points and from what has been reported, and an adaptive noise floor. An intrinsic metric on the stable set decides which converged consensus points are reported. Its output is the set of reported scenes; each should be a different connected component of the stable set. Parameter names in <code>typewriter</code> are environment variables of <code>pcbo3d</code>.</p>
-<p>The problem is stated generically: rigid bodies, finitely many contact constraints, a static-equilibrium residual. The mug and spoon is the instance.</p>
+<p>The solver is a polarised consensus-based optimiser (PCBO, Fornasier–Sun, arXiv 2403.06662) whose consensus point is refined by a balanced energy-distance functional (Fornasier–Hütter, arXiv 1310.1120): attraction to a target spread over the solutions found, repulsion from the other consensus points and from the scenes already reported, and an adaptive noise floor. Density estimates from MASEM (Braun, Burghoff and Toussaint, arXiv 2605.12338) weight the consensus and set its local scales. An intrinsic metric on the stable set decides which converged consensus points are reported. The output is the set of reported scenes; each should be a different connected component of the stable set.</p>
 
 <h2 id="s1">1. Spaces</h2>
-<p>A configuration is a pair of rigid poses, the mug $M$ and the spoon $S$:</p>
-<div class="math">$$ x = (p_M, q_M, p_S, q_S) \in X = (\mathbb{R}^3 \times S^3)^2 , $$</div>
-<p>with $p$ positions and $q$ unit quaternions ($\pm q$ identified). Gravity and the table are invariant under the planar Euclidean group $G = SE(2)$ (translations in $(x,y)$, rotations about $e_z$), acting on both bodies at once; the physically distinct configurations form $X/G$, of dimension $12 - 3 = 9$.</p>
-<p><strong>Motions.</strong> An infinitesimal motion is a twist $u = (v_M, L\,\omega_M, v_S, L\,\omega_S) \in \mathbb{R}^{12}$ ($v$ the velocity of a body's origin, $\omega$ its angular velocity, $L = 0.1\,$m so every component is a length). The three gauge directions (horizontal translation, rotation about the vertical) are removed from every tangent space below.</p>
-<p><strong>Gauge-free distance.</strong> For $a, b \in X$ let $g_{ab} \in G$ align $b$ to $a$ (rotate about $e_z$ by the yaw that best aligns the mugs, translate so the mugs' horizontal positions coincide). Then</p>
-<div class="math">$$ d(a,b) = \Big( \sum_{B \in \{M,S\}} \|p_B^a - p_B^{g_{ab} b}\|^2 + L^2\, \theta(q_B^a, q_B^{g_{ab} b})^2 \Big)^{1/2}, \qquad \theta(q,q') = 2\arccos|\langle q, q'\rangle| \quad (\texttt{gdist}). $$</div>
+<p>A configuration of rigid bodies $B \in \mathcal{B}$ resting on a horizontal support under gravity is</p>
+<div class="math">$$ x = (p_B, q_B)_{B \in \mathcal{B}} \in X = (\mathbb{R}^3 \times S^3)^{\mathcal{B}} , $$</div>
+<p>$p_B$ a position and $q_B$ a unit quaternion ($\pm q$ identified). Gravity and the support are invariant under $G = SE(2)$ (horizontal translations, rotations about the vertical), acting on all bodies at once; the physically distinct configurations form $X/G$, of dimension $6|\mathcal{B}| - 3$.</p>
+<p><strong>Motions.</strong> An infinitesimal motion is a twist $u = (v_B, L\,\omega_B)_{B} \in \mathbb{R}^{6|\mathcal{B}|}$, $v_B$ the velocity of the body's origin, $\omega_B$ its angular velocity and $L$ a length per radian. The gauge directions (the Lie algebra of $G$) are removed from every tangent space below.</p>
+<p><strong>Gauge-free distance.</strong> For $a, b \in X$ let $g_{ab} \in G$ align $b$ to $a$ (the rotation about the vertical that best aligns a reference body, then the translation that matches its horizontal position). Then</p>
+<div class="math">$$ d(a,b) = \Big( \sum_{B} \|p_B^a - p_B^{g_{ab} b}\|^2 + L^2\, \theta(q_B^a, q_B^{g_{ab} b})^2 \Big)^{1/2}, \qquad \theta(q,q') = 2\arccos|\langle q, q'\rangle| . $$</div>
 
 <h2 id="s2">2. Contact strata</h2>
-<p>The solver uses stratification throughout: every evaluated configuration lies on a contact stratum, and the strata enter the landing map, the flatness test, the metric, the repulsion weights and the path checks (listed at the end of this section).</p>
-<p><strong>Constraint functions.</strong> There are $F = 413$ features $g_j : X \to \mathbb{R}$, each $\ge 0$ off contact and $0$ in contact:</p>
-<ul><li><strong>geom-pair gaps:</strong> the signed distance between the table and every mug and spoon geom, and between every mug geom and both spoon geoms (exact formulas for the curved pairs);</li>
-<li><strong>point gaps:</strong> the 8 corners of each of the mug's 24 wall boxes and 8 points of the base's bottom rim against the table; both ends of every handle capsule against the table; both ends of the spoon's shaft (spheres of the shaft's radius) against the table, every wall box, the base and every handle capsule. A face lying flush is several point gaps at $0$.</li></ul>
-<p><strong>Active and held features.</strong> Feature $j$ is <em>active</em> at $x$ when $g_j(x) \le b$, $b = 2\cdot 10^{-5}\,$m. The <em>held set</em> $H(x)$ is the active set less every geom-pair gap that equals the least active point gap of the same pair (that pair is in a face or line contact, and its point gaps imply it).</p>
+<p>Every configuration the solver evaluates lies on a contact stratum. The strata enter the landing map, the flatness test, the metric, the repulsion weights and the path checks.</p>
+<p><strong>Constraint functions.</strong> Features $g_j : X \to \mathbb{R}$, $j = 1,\dots,F$, each $\ge 0$ off contact and $0$ in contact: signed distances between pairs of geometric parts (body to support, body to body), and point gaps that sample a part's faces and edges so that a face lying flush is several point gaps at $0$.</p>
+<p><strong>Active and held features.</strong> Feature $j$ is <em>active</em> at $x$ when $g_j(x) \le b$, for a contact band $b$. The <em>held set</em> $H(x)$ is the active set less every pair gap that equals the least active point gap of the same pair (the pair is then in a face or line contact, which its point gaps imply).</p>
 <p><strong>Stratum.</strong> For a set $H$ of features,</p>
 <div class="math">$$ \Sigma_H = \{x \in X :\ g_j(x) = 0 \ (j \in H),\ \ g_j(x) > 0 \ (j \notin H)\}, $$</div>
-<p>locally a manifold whose tangent space at $x$ is</p>
-<div class="math">$$ T_x\Sigma_H = \{u \in \mathbb{R}^{12} :\ \nabla g_j(x)\cdot u = 0\ (j \in H),\ u \perp \text{gauge}\}, \qquad \dim(\Sigma_H/G) = 9 - r_H(x), $$</div>
-<p>$r_H(x)$ the rank of the held gradients with the gauge directions removed (each gradient scaled to unit length; computed from the gaps' witness points, the closest points and normal, and by central differences where no witness exists). The strata partition the configurations by contact pattern; a connected component of stable configurations may cross several strata (a contact made or broken along a path).</p>
-<p><strong>Projection onto a stratum.</strong> $\text{proj}_{\Sigma_H}(x)$: damped Gauss–Newton with minimum-norm steps on a maximal independent subset of $H$ (greedy on the unit gradients, a row counting when its component outside the span of the earlier rows exceeds $10^{-3}$), then a check that the dependent features also hold, else the full set. A <strong>stratum step</strong> of length $\rho$ along a unit $u \in T_x\Sigma_H$ is $x \mapsto \text{proj}_{\Sigma_H}(x \oplus \rho u)$.</p>
-<p><strong>Where the strata enter the solver.</strong></p>
-<ol><li><strong>Landing map</strong> (Section 4): every evaluation projects onto a stratum $\Sigma_H$ of a target rank.</li>
-<li><strong>Flatness test</strong> (Section 3): random stratum steps.</li>
-<li><strong>Flat family</strong>: a particle that was flat, is still exact and holds the same set $H$ is in the same flat family and its flatness test is not repeated (<code>LEAN_FLAT_ONCE=1</code>).</li>
-<li><strong>Kernel metric</strong> (Section 5.1): the contact term $\lambda^2 |H_a \triangle H_b|$.</li>
-<li><strong>Repulsion weights</strong> (Section 6.3): divided by one plus the number of stratum transitions beyond one along the straight path between two clusters (<code>AFF_REPEL=2</code>).</li>
-<li><strong>Path checks of the component metric</strong> (Section 5.3): segments projected onto the contacts held at both ends; the planner slides within the held contacts or releases one at a time.</li></ol>
+<p>locally a manifold with tangent space</p>
+<div class="math">$$ T_x\Sigma_H = \{u :\ \nabla g_j(x)\cdot u = 0\ (j \in H),\ u \perp \text{gauge}\}, \qquad \dim(\Sigma_H/G) = 6|\mathcal{B}| - 3 - r_H(x), $$</div>
+<p>$r_H(x)$ the rank of the held gradients with the gauge removed (each gradient scaled to unit length; from the gaps' witness points where available, else central differences). The strata partition the configurations by contact pattern; a connected component of stable configurations may cross several strata, making or breaking a contact along a path.</p>
+<p><strong>Projection and stratum steps.</strong> $\text{proj}_{\Sigma_H}(x)$ is damped Gauss–Newton with minimum-norm steps on a maximal independent subset of $H$, chosen greedily on the unit gradients (a row counts when its component outside the span of the earlier rows exceeds $\theta_p$), then a check that the dependent features hold too, else the full set. A stratum step of length $\rho$ along a unit $u \in T_x\Sigma_H$ is $x \mapsto \text{proj}_{\Sigma_H}(x \oplus \rho u)$.</p>
+<p><strong>Where the strata enter.</strong></p>
+<ol><li>The landing map (Section 4) projects every evaluation onto a stratum of a target rank.</li>
+<li>The flatness test (Section 3) takes random stratum steps.</li>
+<li>A particle that was flat, is still exact and holds the same set $H$ is in the same flat family, and its flatness test is not repeated.</li>
+<li>The kernel metric (Section 5.1) has the contact term $\lambda_c^2 |H_a \triangle H_b|$.</li>
+<li>The repulsion weights (Section 6.3) are divided by one plus the number of stratum transitions beyond one along the path between two clusters.</li>
+<li>The component metric's path checks (Section 5.4) project segments onto the contacts held at both ends; its planner slides within the held contacts or releases one at a time.</li></ol>
 
 <h2 id="s3">3. Equilibria and the flat set</h2>
-<p>At a configuration with active contacts $c = 1,\dots,n_c$ (normal $n_c$, friction coefficient $\mu = 10$), the circular friction cone is replaced by the inscribed polygonal cone with $16$ generators $f_{c,k}$. The equilibrium residual is</p>
+<p>At a configuration with active contacts $c = 1,\dots,n_c$ (normals $n_c$, friction coefficient $\mu$), each circular friction cone is replaced by the inscribed polygonal cone with $K_c$ generators $f_{c,k}$. The equilibrium residual is</p>
 <div class="math">$$ V_{\text{in}}(x) = \min_{\lambda \ge 0}\ \Big\| \sum_{c,k} \lambda_{c,k}\, W_{c,k}(x) - w_g \Big\| , $$</div>
-<p>$W_{c,k} \in \mathbb{R}^{12}$ the wrench of $f_{c,k}$ on both bodies, $w_g$ the wrench balancing gravity (units $0.3 \cdot 9.81\,$N and $0.1\,$m), by Lawson–Hanson NNLS with a KKT check. Because the cone is inscribed, $V_{\text{in}} = 0$ certifies an equilibrium. A configuration is <strong>valid</strong> when no gap is below $-2\cdot 10^{-7}\,$m and at least one active contact joins mug and spoon.</p>
-<ul><li><strong>Exact:</strong> valid and $V_{\text{in}}(x) \le 10^{-10}$.</li>
-<li><strong>Flat (robust):</strong> exact, and at least half of $8$ random stratum steps of length $\rho = 10^{-5}$ stay exact; tested sequentially (stop at 4 exact or 5 failed steps, the same verdict as the full test).</li></ul>
-<p>A <strong>scene</strong> is a connected component of $\mathcal{F}_{\text{flat}}/G$, the flat configurations up to the table's symmetry. The flat landings have intrinsic dimension about 3-4, matching strata of dimension $9 - r$ for $r = 5,\dots,8$.</p>
+<p>$W_{c,k}$ the wrench of $f_{c,k}$ on all bodies and $w_g$ the wrench balancing gravity (non-negative least squares with a KKT check). Because the cones are inscribed, $V_{\text{in}} = 0$ certifies an equilibrium. A configuration is <strong>valid</strong> when no gap is below $-\epsilon_{\text{pen}}$ and the bodies are in mutual contact.</p>
+<ul><li><strong>Exact:</strong> valid and $V_{\text{in}}(x) \le \epsilon_{\text{eq}}$.</li>
+<li><strong>Flat (robust):</strong> exact, and at least half of $K_f$ random stratum steps of length $\rho_f$ stay exact (tested sequentially, stopping as soon as the majority is decided).</li></ul>
+<p>A <strong>scene</strong> is a connected component of $\mathcal{F}_{\text{flat}}/G$, the flat configurations up to the support's symmetry.</p>
 
 <h2 id="s4">4. Search space, landing map, objective</h2>
-<p>PCBO moves in the input space of the landing law,</p>
-<div class="math">$$ Z = SO(3) \times [0, \bar h] \times SO(3) \times B, \qquad \bar h = 0.02\,\text{m}, \quad B = [-0.2, 0.2]^2 \times [0, 0.2]\ \text{m}, $$</div>
-<p>$z = (q_M, h, q_S, p_S)$: the mug's orientation, its lowest point at height $h$ above the table, the spoon's orientation and origin (the mug's horizontal position is the origin). Steps use normalised chart coordinates $z' \ominus z = (\tfrac1\pi\log(q_M' q_M^{-1}), \tfrac{h'-h}{\bar h}, \tfrac1\pi\log(q_S' q_S^{-1}), \tfrac{p_S'-p_S}{0.4}) \in \mathbb{R}^{10}$ and $z \oplus s$ (left multiplication by $\exp(\pi s_{\text{rot}})$, reflection at the boundaries).</p>
-<p><strong>Landing map</strong> $\Lambda_r : Z \to X \cup \{\varnothing\}$, target rank $r \in \{5,6,7,8\}$: form the initial pose $x_0(z)$; hold features in increasing order of gap while each raises the rank of the held gradients with the gauge (a row counts when its component outside the span exceeds $0.05$), up to rank $r$, every penetrating feature included; project onto $\Sigma_H$; add new penetrations and project again, up to 4 rounds; otherwise the landing fails. $\Lambda_r$ is piecewise smooth and many-to-one. Particle $i$ keeps the rank $r_i = 5 + (i \bmod 4)$; $x_i = \Lambda_{r_i}(z_i)$ is its <em>image</em> (the unlanded pose if the landing failed).</p>
-<p><strong>Objective.</strong> $E(z) = \min\{V_{\text{in}}(\Lambda(z)),\,2\}$ for a valid landing, $E = 2$ for a failed, penetrating or contact-free one. Every flat state is a global minimiser ($E = 0$); one oracle call evaluates a landing, and the flatness test adds a few.</p>
+<p>PCBO moves in the input space $Z$ of a landing law: one orientation per body, and positions and heights in boxes (the reference body's horizontal position fixed, which removes the translational gauge), with reference law $\mu_0$ uniform (Haar on each orientation). Steps use chart coordinates $z' \ominus z \in \mathbb{R}^{\dim Z}$ (rotation vectors and coordinate differences, each normalised by its range) and $z \oplus s$ (left multiplication by the exponential on each orientation, reflection at the box boundaries).</p>
+<p><strong>Landing map</strong> $\Lambda_r : Z \to X \cup \{\varnothing\}$ for a target rank $r$: form the pose $x_0(z)$; hold features in increasing order of gap while each raises the rank of the held gradients with the gauge (a row counts when its component outside the span exceeds $\theta_r$), up to rank $r$, every penetrating feature included; project onto $\Sigma_H$; add new penetrations and project again, up to $n_{\text{proj}}$ rounds; otherwise the landing fails. $\Lambda_r$ is piecewise smooth and many-to-one. Particle $i$ keeps a fixed target rank $r_i$ (the ranks cycle over the particles); $x_i = \Lambda_{r_i}(z_i)$ is its <em>image</em>, the unlanded pose if the landing failed.</p>
+<p><strong>Objective.</strong> $E(z) = \min\{V_{\text{in}}(\Lambda(z)),\,E_{\max}\}$ for a valid landing, $E = E_{\max}$ otherwise. Every flat state is a global minimiser. One oracle call evaluates a landing; the flatness test adds a few.</p>
 
 <h2 id="s5">5. The metrics</h2>
 <h3>5.1 Placement metric with a contact term</h3>
-<div class="math">$$ d_X(a,b)^2 = \sum_B \tfrac1n \Big(\lvert c^a_B - c^b_B\rvert^2 + \operatorname{tr}\big((R^a_B - R^b_B)\,\Sigma_B\,(R^a_B - R^b_B)^\top\big)\Big), \qquad d_G(a,b) = \min_{g\in G} d_X(a, g b), $$</div>
-<p>the root-mean-square displacement of each body's matter ($c_B$ the centre of mass, $\Sigma_B$ the second moment), the table's symmetry divided out by a closed-form planar Procrustes step. With the contact term (<code>AX_STRATA=1</code>),</p>
-<div class="math">$$ \delta(a,b)^2 = d_G(a,b)^2 + \lambda^2\,\lvert H_a \,\triangle\, H_b\rvert, \qquad \lambda = 4.66\ \text{cm (the bodies' mean RMS radius)} , $$</div>
-<p>a metric on scenes: gaining or losing a contact counts as much as moving a body by its own size.</p>
+<div class="math">$$ d_X(a,b)^2 = \sum_B \tfrac{1}{|\mathcal{B}|} \Big(\lvert c^a_B - c^b_B\rvert^2 + \operatorname{tr}\big((R^a_B - R^b_B)\,\Sigma_B\,(R^a_B - R^b_B)^\top\big)\Big), \qquad d_G(a,b) = \min_{g\in G} d_X(a, g b), $$</div>
+<p>the root-mean-square displacement of each body's matter ($c_B$ the centre of mass, $\Sigma_B$ the second moment), the support's symmetry divided out by a closed-form planar Procrustes step; $d_G$ is a metric on scenes. With the contact term,</p>
+<div class="math">$$ \delta(a,b)^2 = d_G(a,b)^2 + \lambda_c^2\,\lvert H_a \,\triangle\, H_b\rvert , $$</div>
+<p>$\lambda_c$ the bodies' mean RMS radius, so gaining or losing a contact counts as much as moving a body by its own size.</p>
 <h3>5.2 Kernel distance</h3>
-<p>On the images of the swarm, the $k$-nearest-neighbour graph ($k = 8$) with edge lengths $\delta(x_i,x_j)/s$, $s = 4.65\,$cm; $D_{ij}$ is its shortest-path distance (Bernstein–de Silva–Langford–Tenenbaum). $D$ is the distance in the consensus kernel.</p>
-<h3>5.3 The component metric (intrinsic distance on the flat set)</h3>
+<p>On the images of the swarm, the $k_g$-nearest-neighbour graph with edge lengths $\delta(x_i,x_j)/s$; $D_{ij}$ is its shortest-path distance (Bernstein–de Silva–Langford–Tenenbaum). $D$ is the distance in the consensus kernel.</p>
+<h3>5.3 MASEM's nearest-neighbour estimates</h3>
+<p>The solver estimates where it has been from its own flat arrivals. Following MASEM, which weights samples of a constraint manifold by a power of their distance to the $k$-th nearest sample, let $A_t$ be the flat arrivals up to iteration $t$ (the configurations at which a particle became flat; a particle that stays flat adds none), $n_t = |A_t|$, and</p>
+<div class="math">$$ k_t = \lceil \sqrt{n_t}\, \rceil, \qquad \varepsilon_t(x) = \text{the } k_t\text{-th smallest of } \{ d_G(x,a) : a \in A_t,\ d_G(x,a) > 0\} . $$</div>
+<p>As $k_t \to \infty$ with $k_t/n_t \to 0$, the nearest-neighbour density estimate on the $p$-dimensional flat set,</p>
+<div class="math">$$ \hat\rho_t(x) = \frac{k_t}{n_t\, \omega_p\, \varepsilon_t(x)^{p}} \qquad (\omega_p \text{ the volume of the unit } p\text{-ball}), $$</div>
+<p>is consistent (Loftsgaarden–Quesenberry). Two scales are measured from the run at every iteration, on a random subsample $S_t \subseteq A_t$, with $T_j(a)$ the distance from $a$ to its $j$-th nearest other arrival:</p>
+<div class="math">$$ r_t = \operatorname{median}_{a \in S_t} \varepsilon_t(a), \qquad p_t = \Big( \frac{1}{|S_t|} \sum_{a\in S_t} \frac{1}{k_t - 1} \sum_{j=1}^{k_t-1} \log \frac{T_{k_t}(a)}{T_j(a)} \Big)^{-1} , $$</div>
+<p>the median radius and the intrinsic dimension (the Levina–Bickel maximum-likelihood estimate, its inverse averaged over points as MacKay and Ghahramani propose). The <strong>visit potential</strong> compares the density at $x$ with the run's typical density,</p>
+<div class="math">$$ V_t(x) = \log\frac{\hat\rho_t(x)}{\hat\rho_t\text{ at radius } r_t} = p_t \log \frac{r_t}{\varepsilon_t(x)} , $$</div>
+<p>positive where the run has been more often than typical. The same nearest-neighbour rule classifies the flat set: with $\mathcal{V}_t$ the run's evaluations so far (each flat or not) and $\kappa_t = \lceil\sqrt{|\mathcal{V}_t|}\,\rceil$,</p>
+<div class="math">$$ \phi_t(z) = \frac{1}{\kappa_t}\, \#\{\text{flat states among the } \kappa_t \text{ evaluations nearest } z \text{ in } d_G\} . $$</div>
+<p>These estimates are used four times: the consensus weights carry $e^{-V_t/2} = (\varepsilon_t/r_t)^{p_t/2}$, MASEM's distance-power weight with exponent $p_t/2$ (Section 6.1); the noise floor is proportional to $\varepsilon_t$ (Section 7); $\varepsilon_t$ is each reported scene's radius in the basin pull-back, and $\phi_t$ along a path gives the repulsion's affinity (Section 6.3).</p>
+<h3>5.4 The component metric</h3>
 <div class="math">$$ d_\Sigma(a,b) = \inf\{\text{length}(\gamma) : \gamma \text{ a path in } \mathcal{F}_{\text{flat}} \text{ from } a \text{ to } b\}, \qquad d_\Sigma = \infty \text{ across components}. $$</div>
-<p>The solver estimates whether $d_\Sigma(a,b) &lt; \infty$ by a checked join (<code>Joiner</code>): a segment is exact when its interior points, spaced at most $h = 0.25\,$mm apart and projected onto the contacts held at both ends, are all exact. A join of $a$ to $b$ is the straight segment when they are within $5\,$cm; otherwise a directed planner whose steps go towards $b$ along the tangent space of the contacts kept (sliding), or release one contact $b$ does not have, accepting a step when the pose is exact and the segment from the previous pose is exact, giving up after 20 steps without progress. A successful join proves $d_\Sigma &lt; \infty$ at resolution $h$; a failed one proves nothing. Precision requires $h$ below the narrowest gap between components; gaps of $20$-$100\,\mu$m occur.</p>
+<p>The solver estimates whether $d_\Sigma(a,b) &lt; \infty$ by a <strong>checked join</strong>. A segment is exact when its interior points, spaced at most $h$ apart and projected onto the contacts held at both ends, are all exact. A join of $a$ to $b$ is the straight segment when $d(a,b) \le R_s$; otherwise a directed planner whose steps (at most $H_p$ long) go towards $b$ along the tangent space of the contacts kept (sliding), or release one contact that $b$ does not have, a step being accepted when the pose is exact and the segment from the previous pose is exact; the planner gives up after $n_{\text{stall}}$ steps without progress. A successful join shows $d_\Sigma(a,b) &lt; \infty$ at resolution $h$; a failed join shows nothing. Precision requires $h$ below the narrowest gap between components.</p>
 
 <h2 id="s6">6. Consensus points</h2>
 <h3>6.1 Weights</h3>
-<p>Particle $i$ weights particle $j$ by</p>
-<div class="math">$$ \omega_{ij} \propto \exp\big(-\alpha_i D_{ij}^2\big)\,\Big(\frac{\varepsilon_k(x_j)}{r_t}\Big)^{p/2} , $$</div>
-<p>over all particles $j$, with $\varepsilon_k(x)$ the distance to the $k$-th nearest flat arrival of the run ($k = \lceil\sqrt n\rceil$, $n$ the arrivals so far), $r_t$ its median over the arrivals and $p$ their intrinsic dimension (Levina–Bickel), all measured from the run at every iteration. The second factor is the density correction of MASEM (Braun, Burghoff and Toussaint, arXiv 2605.12338): rarely visited flat states weigh more (<code>CBO_V=1</code>). $\alpha_i$ is set by bisection so that each consensus measure has effective sample size $62$ ($=8N/128$, <code>ESS=62</code>). The kernel uses images only: the objective does not enter the weights.</p>
+<p>Particle $i$ weights every particle $j$ by</p>
+<div class="math">$$ \omega_{ij} \propto \exp\big(-\alpha_i D_{ij}^2\big)\, e^{-V_t(x_j)/2} , $$</div>
+<p>the polarised locality kernel times MASEM's tilt towards rarely visited flat states. $\alpha_i$ is chosen by bisection so that particle $i$'s consensus measure has effective sample size $(\sum_j \omega_{ij})^2 / \sum_j \omega_{ij}^2 = n_{\text{eff}}$. The weights use images only; the objective does not enter them.</p>
 <h3>6.2 Continuous consensus point</h3>
-<div class="math">$$ m_i = z_i \oplus \sum_j \omega_{ij}\, (z_j \ominus z_i) \qquad (\texttt{CONS\_CONT=1}). $$</div>
+<div class="math">$$ m_i = z_i \oplus \sum_j \omega_{ij}\, (z_j \ominus z_i) . $$</div>
 <h3>6.3 Repelled consensus points (balanced energy distance)</h3>
-<p>The consensus points $c_i$ decrease, by 20 Jacobi gradient steps of size $\eta = 0.05$ (each coordinate clipped at $0.5$), starting from $c_i = m_i$,</p>
-<div class="math">$$ \mathcal{B}_i(c) = |c \ominus m_i|^2 + \mu_t \Big[ \mathbb{E}_{y\sim\omega_t}|c \ominus y| - \frac{1}{|N_i|}\sum_{j \in N_i} a_{ij}\,|c \ominus c_j| - \frac{1}{K}\sum_{y \in P_K(c)} |c \ominus y| \Big] , $$</div>
-<ul><li><strong>Target</strong> $\omega_t$: points on segments between inputs that produced flat landings, drawn with weight (distance of their image to the nearest other flat image)$^2$, so the target is spread evenly over the found solutions rather than following how often each was found (<code>AX_TARGET=1</code>).</li>
-<li><strong>Repulsion among consensus points</strong>: $N_i$ are the 8 consensus points nearest $c_i$ (in inputs) whose cluster has another representative flat state, each weighted by the affinity $a_{ij} \in [0,1]$ that the two clusters share a component: along the straight path between the clusters' representative flat states, the least share of flat evaluations among the $\lceil\sqrt N\rceil$ nearest evaluations at 9 interior points, divided by one plus the stratum transitions beyond one (<code>AFF_REPEL=2</code>); likely-same clusters push apart, likely-different ones barely interact.</li>
-<li><strong>Basin pull-back</strong> $P_K(c)$: the $K = 8$ nearest of the inputs of flat arrivals whose image lies within a representative's $k$-NN radius $\varepsilon_k$ (the pull-back of the reported scenes through the landing map; <code>BP=1</code>).</li>
-<li><strong>Weight</strong> $\mu_t = \beta\, \operatorname{median}_{i\ne j} |m_i \ominus m_j|$, $\beta = 5$ (<code>BF_MU=5 BF_SCALE=1</code>), with the energy-distance kernel $|\cdot|^p$, $p = 1$.</li></ul>
+<p>Starting from $c_i = m_i$, the consensus points take $n_B$ Jacobi gradient steps of size $\eta$ (each coordinate clipped at $c_B$) on</p>
+<div class="math">$$ \mathcal{B}_i(c) = |c \ominus m_i|^2 + \mu_t \Big[ \mathbb{E}_{y\sim\omega_t}|c \ominus y|^{q} - \frac{1}{|N_i|}\sum_{j \in N_i} a_{ij}\,|c \ominus c_j|^{q} - \frac{1}{K_b}\sum_{y \in P_t(c)} |c \ominus y|^{q} \Big] , $$</div>
+<p>the energy distance with kernel $|\cdot|^q$, $1 \le q &lt; 2$, made up of:</p>
+<ul><li><strong>Target</strong> $\omega_t$: points on segments between inputs that produced flat landings, the inputs drawn with weight proportional to a power $m_\omega$ of the distance of their image to the nearest other flat image, so the target spreads evenly over the solutions found rather than following how often each was found.</li>
+<li><strong>Repulsion among consensus points</strong>: $N_i$ are the $K_r$ consensus points nearest $c_i$ whose cluster has another representative flat state (the flat state of the cluster's consensus support nearest its consensus point). Each is weighted by the affinity that the two clusters share a component,
+<div class="math">$$ a_{ij} = \frac{\min_{s = 1,\dots,9} \phi_t\big(x^{\text{rep}}_i + \tfrac{s}{10}(x^{\text{rep}}_j - x^{\text{rep}}_i)\big)}{1 + \max(0,\ \sigma_{ij} - 1)} , $$</div>
+$\sigma_{ij}$ the number of stratum transitions between the two representatives: likely-same clusters push apart, likely-different ones barely interact.</li>
+<li><strong>Basin pull-back</strong> $P_t(c)$: the $K_b$ nearest to $c$ of the inputs of flat arrivals whose image lies within $\varepsilon_t(y)$ of a reported scene $y$ (the reported scenes pulled back through the landing map).</li>
+<li><strong>Weight</strong> $\mu_t = \beta\, \operatorname{median}_{i\ne j} |m_i \ominus m_j|^{2-q}$, scale-free in the swarm's spread.</li></ul>
 <p>Write $\ell_i = |c_i \ominus z_i|$ and $u_i = (c_i \ominus z_i)/\ell_i$.</p>
 
 <h2 id="s7">7. The dynamics</h2>
-<div class="math">$$ dZ^i_t = \lambda\, \ell_i\, u_i\, dt \;+\; \sigma\, \operatorname{diag}\!\big(|\ell_i u_{i,k}| + \kappa_i\big)_{k=1}^{10}\, dB^i_t , \qquad X^i_t = \Lambda_{r_i}(Z^i_t), $$</div>
-<p>$\lambda = 1$, $\sigma = 0.2$: drift towards the particle's own repelled consensus point, anisotropic noise (Carrillo et al. 2019) plus a floor. The floor is local (<code>FLOOR_LOCAL=1</code>):</p>
-<div class="math">$$ \kappa_i = \frac{\varepsilon_k(x_i)}{0.2\,\text{m}} \sqrt{\frac{1-\rho}{10\,\sigma^2 \Delta t}}, \qquad \rho = (1-\lambda\Delta t)^2 + \sigma^2\Delta t = 0.7285 , $$</div>
-<p>so that a consensus measure's stationary spread equals the local spacing of the run's flat arrivals around the particle's image ($\varepsilon_k$ at a flat image, its median $r_t$ otherwise). Euler–Maruyama with $\Delta t = 0.15$, $\xi \sim \mathcal{N}(0, I_{10})$:</p>
-<div class="math">$$ s_i = \lambda \Delta t\, \ell_i u_i + \sigma \sqrt{\Delta t}\, \big(|\ell_i u_{i,k}| + \kappa_i\big)_k \odot \xi, \qquad s_i \leftarrow \operatorname{clip}_{[-0.5,0.5]}(s_i), \qquad z_i \leftarrow z_i \oplus s_i . $$</div>
+<div class="math">$$ dZ^i_t = \lambda\, \ell_i\, u_i\, dt \;+\; \sigma\, \operatorname{diag}\!\big(|\ell_i u_{i,k}| + \kappa_i\big)_{k}\, dB^i_t , \qquad X^i_t = \Lambda_{r_i}(Z^i_t), $$</div>
+<p>drift towards the particle's own repelled consensus point and anisotropic noise (Carrillo et al. 2019) with a local floor</p>
+<div class="math">$$ \kappa_i = \frac{\varepsilon_t(x_i)}{s_z} \sqrt{\frac{1-\rho}{\dim Z\; \sigma^2 \Delta t}}, \qquad \rho = (1-\lambda\Delta t)^2 + \sigma^2\Delta t , $$</div>
+<p>chosen so that a consensus measure's stationary spread equals the local spacing of the flat arrivals around the particle's image ($\varepsilon_t(x_i)$ at a flat image, $r_t$ otherwise; $s_z$ converts lengths to input units). Euler–Maruyama with step $\Delta t$, $\xi \sim \mathcal{N}(0, I)$, each coordinate clipped at $c_s$:</p>
+<div class="math">$$ s_i = \lambda \Delta t\, \ell_i u_i + \sigma \sqrt{\Delta t}\, \big(|\ell_i u_{i,k}| + \kappa_i\big)_k \odot \xi, \qquad z_i \leftarrow z_i \oplus \operatorname{clip}(s_i) . $$</div>
 <p>The particles move only by this SDE.</p>
 
 <h2 id="s8">8. Convergence and the report</h2>
-<p><strong>Converged particles.</strong> The spread of particle $i$'s consensus measure is $V_i = \sum_j \omega_{ij}\,|z_j \ominus c_i|^2$. Over the relaxation time $\tau = \lceil 1/(-\ln\rho)\rceil = 4$, particle $i$ has stalled when the mean of $V_i$ over the last $\tau$ steps is not below its mean over the $\tau$ steps before.</p>
-<p><strong>Clusters.</strong> Stalled particles $a, b$ are linked when $|c_a \ominus c_b|^2 \le \max(V_a, V_b)$ (single linkage). A cluster's <em>representative</em> is the flat particle among its members and their consensus support ($\omega_{ij} &gt; 10^{-6}$) whose input is nearest the cluster's mean consensus point; its image is the cluster's converged scene. The members' spread history is then cleared, so a cluster may converge again later (<code>REP_NORELOC=1</code>: the particles stay where they are).</p>
-<p><strong>The report</strong> (<code>METRIC_EMIT=1</code>). The converged scene is tested by the component metric of Section 5.3 against the $6$ nearest earlier converged scenes within $12\,$cm (4 join attempts each, alternating direction; <code>MET_SEG=2.5e-4 MET_K=6 MET_ATT=4 MET_R=0.12</code>). If a join succeeds it lies in the same component as an earlier scene and is not reported; otherwise it is reported as a new scene. Every converged scene, reported or not, enters the basin pull-back of Section 6.3.</p>
+<p><strong>Converged particles.</strong> The spread of particle $i$'s consensus measure is $V_i = \sum_j \omega_{ij}\,|z_j \ominus c_i|^2$. With the relaxation time $\tau = \lceil 1/(-\ln\rho)\rceil$, particle $i$ has stalled when the mean of $V_i$ over the last $\tau$ steps is not below its mean over the $\tau$ steps before.</p>
+<p><strong>Clusters.</strong> Stalled particles $a, b$ are linked when $|c_a \ominus c_b|^2 \le \max(V_a, V_b)$ (single linkage). A cluster's <em>representative</em> is the flat particle among its members and their consensus support whose input is nearest the cluster's mean consensus point; its image is the cluster's converged scene. The members' spread history is then cleared, so the cluster may converge again later; the particles stay where they are.</p>
+<p><strong>The report.</strong> The converged scene is joined (Section 5.4) to its $K_m$ nearest earlier converged scenes within distance $R_m$, with $A_m$ attempts each in alternating directions. If a join succeeds the scene lies in the component of an earlier scene and is not reported; otherwise it is reported. Every converged scene, reported or not, enters the basin pull-back of Section 6.3.</p>
 
-<h2 id="s9">9. One iteration and the parameters</h2>
+<h2 id="s9">9. One iteration</h2>
 <pre class="code"><code>for each particle i (in parallel):
     land z_i at rank r_i; if valid: one oracle call -&gt; E_i;
         if exact and not in its flat family: sequential flatness test
-record flat arrivals (k-NN radii eps_k, r_t, p measured each iteration)
-graph: kNN on images with the contact-term metric, shortest paths D
-weights omega_ij ~ exp(-alpha_i D_ij^2) (eps_k(x_j)/r_t)^(p/2) over the eligible set, alpha_i by ESS = 62
+record the flat arrivals; update k_t, eps_t, r_t, p_t
+graph: k_g-NN on images with the contact-term metric, shortest paths D
+weights omega_ij ~ exp(-alpha_i D_ij^2) exp(-V_t(x_j)/2), alpha_i by the effective sample size
 m_i &lt;- z_i (+) sum_j omega_ij (z_j (-) z_i)
-c_i &lt;- 20 gradient steps on B_i (pull to m_i; target omega_t; affinity-weighted repulsion; basin pull-back)
-convergence: spreads V_i, stall test over tau = 4, clusters by single linkage
-for each cluster: representative; component metric against earlier scenes -&gt; report or not
+c_i &lt;- n_B gradient steps on B_i (pull to m_i; target; affinity-weighted repulsion; basin pull-back)
+convergence: spreads V_i, stall test over tau, clusters by single linkage
+for each cluster: representative; checked joins to earlier scenes -&gt; report or not
 for each particle i: z_i &lt;- z_i (+) clip(drift + anisotropic noise with floor kappa_i)</code></pre>
-<div class="tablewrap"><table><thead><tr><th>configuration S1</th><th>value</th><th>env</th></tr></thead><tbody>
-<tr><td>particles, ranks</td><td>1,000; ranks 5-8 fixed per particle</td><td><code>NP=1000</code></td></tr>
-<tr><td>kernel metric</td><td>placement metric + contact term, $\lambda = 4.66$ cm; kNN graph $k = 8$</td><td><code>METRIC_AX=1 AX_STRATA=1 K=8</code></td></tr>
-<tr><td>weights</td><td>effective sample size 62, MASEM density factor</td><td><code>ESS=62 CBO_V=1 KNN=1</code></td></tr>
-<tr><td>consensus point</td><td>continuous, energy distance $p = 1$, weight $\beta = 5$ times the median spread, target spread over the found solutions</td><td><code>CONS_CONT=1 BF_MU=5 BF_SCALE=1 AX_TARGET=1</code></td></tr>
-<tr><td>repulsion</td><td>affinity-weighted among consensus points; basin pull-back from the reported scenes, $K = 8$</td><td><code>AFF_REPEL=2 BP=1</code></td></tr>
-<tr><td>dynamics</td><td>$\lambda = 1$, $\sigma = 0.2$, $\Delta t = 0.15$, anisotropic noise, local floor, steps clipped at 0.5</td><td><code>ANISO=1 FLOOR_LOCAL=1</code></td></tr>
-<tr><td>convergence</td><td>stall over $\tau = 4$, single linkage, particles stay</td><td><code>REP=1 REP_NORELOC=1</code></td></tr>
-<tr><td>component metric</td><td>checked joins at 0.25 mm, 6 nearest earlier scenes within 12 cm, 4 attempts</td><td><code>METRIC_EMIT=1 MET_SEG=2.5e-4 MET_K=6 MET_ATT=4</code></td></tr>
-<tr><td>flatness</td><td>sequential test; flat family by held contacts</td><td><code>FLAT_EARLY=1 LEAN=1 LEAN_FLAT_ONCE=1</code></td></tr>
+
+<h2 id="s10">10. The instance and the run</h2>
+<p><strong>Instance.</strong> Two bodies, a mug and a spoon, on a table, friction coefficient $\mu = 10$. The mug's wall is 24 boxes, with a base and a handle of capsules. The $F = 413$ features are the signed distances between the table and every mug and spoon geom and between every mug geom and both spoon geoms, plus point gaps: the 8 corners of every wall box and 8 points of the base's bottom rim against the table, both ends of every handle capsule against the table, and both ends of the spoon's shaft against the table, every wall box, the base and every handle capsule. The input space is $Z = SO(3) \times [0, 0.02\,\text{m}] \times SO(3) \times [-0.2, 0.2]^2 \times [0, 0.2]\,\text{m}$: the mug's orientation, the height of its lowest point, the spoon's orientation and origin, the mug's horizontal position at the origin. Chart coordinates divide rotation vectors by $\pi$, the height by $0.02\,$m and the spoon's position by $0.4\,$m. Equilibrium wrenches are in units of $0.3 \cdot 9.81\,$N and $0.1\,$m. Gaps between neighbouring components can be as narrow as $20$-$100\,\mu$m.</p>
+<div class="tablewrap"><table><thead><tr><th>symbol</th><th>meaning</th><th>value</th></tr></thead><tbody>
+<tr><td>$N$</td><td>particles</td><td>1,000</td></tr>
+<tr><td>$L$</td><td>length per radian in twists and in $d$</td><td>0.1 m</td></tr>
+<tr><td>$b$, $\epsilon_{\text{pen}}$</td><td>contact band, penetration tolerance</td><td>$2\cdot10^{-5}$ m, $2\cdot10^{-7}$ m</td></tr>
+<tr><td>$\theta_p$, $\theta_r$, $n_{\text{proj}}$</td><td>rank thresholds of the projection and of the landing; projection rounds</td><td>$10^{-3}$, 0.05, 4</td></tr>
+<tr><td>$K_c$</td><td>generators of each friction cone</td><td>16</td></tr>
+<tr><td>$\epsilon_{\text{eq}}$</td><td>exactness threshold on $V_{\text{in}}$</td><td>$10^{-10}$</td></tr>
+<tr><td>$K_f$, $\rho_f$</td><td>flatness test: steps, step length</td><td>8, $10^{-5}$</td></tr>
+<tr><td>$r_i$</td><td>target ranks</td><td>5, 6, 7, 8 in turn</td></tr>
+<tr><td>$E_{\max}$</td><td>objective cap</td><td>2</td></tr>
+<tr><td>$\lambda_c$</td><td>contact-term weight</td><td>4.66 cm</td></tr>
+<tr><td>$k_g$, $s$</td><td>kernel graph neighbours, length scale</td><td>8, 4.65 cm</td></tr>
+<tr><td>$|S_t|$</td><td>subsample for $r_t$ and $p_t$</td><td>at most 256</td></tr>
+<tr><td>$n_{\text{eff}}$</td><td>effective sample size of each consensus measure</td><td>62 ($= 8N/128$)</td></tr>
+<tr><td>$q$, $\beta$</td><td>energy-distance exponent, weight</td><td>1, 5</td></tr>
+<tr><td>$n_B$, $\eta$, $c_B$</td><td>gradient steps on $\mathcal{B}_i$, step size, clip</td><td>20, 0.05, 0.5</td></tr>
+<tr><td>$m_\omega$</td><td>target weight exponent (256 target points per iteration)</td><td>2</td></tr>
+<tr><td>$K_r$, $K_b$</td><td>repelling consensus points, pull-back inputs</td><td>8, 8</td></tr>
+<tr><td>$\lambda$, $\sigma$, $\Delta t$, $c_s$</td><td>drift rate, noise, time step, step clip</td><td>1, 0.2, 0.15, 0.5 (so $\rho = 0.7285$, $\tau = 4$)</td></tr>
+<tr><td>$s_z$</td><td>length per input unit in the floor</td><td>0.2 m</td></tr>
+<tr><td>$h$</td><td>check spacing of the component metric</td><td>0.25 mm</td></tr>
+<tr><td>$R_s$, $H_p$, $n_{\text{stall}}$</td><td>straight-segment range, planner step, planner patience</td><td>5 cm, 1 mm, 20</td></tr>
+<tr><td>$K_m$, $R_m$, $A_m$</td><td>report: earlier scenes tested, their range, attempts</td><td>6, 12 cm, 4</td></tr>
 </tbody></table></div>
 
-<h2 id="s10">10. How the results are scored</h2>
-<p>The score is a diagnostic made after the run; the solver never sees it. Each run's converged scenes (reported and not reported) are merged into a reference of about 21,400 flat states sampled independently of the solver (10,386 flat landings of the landing law and Majid's stable poses), already grouped into components by the same checked joins at $0.25\,$mm and used only as stepping stones. The first merge pass gives every converged scene a component label. A reported scene is a <em>first find</em> when no earlier reported scene has its label; the <strong>distinct share</strong> is first finds over reported scenes. A component is <em>lost</em> when the run converged in it but the component metric judged every scene there the same as an earlier one. Two scenes in different components are separated at the planner's resolution; separation is not proved.</p>
+<h2 id="s11">11. How the results are scored</h2>
+<p>The score is a diagnostic made after the run; the solver never sees it. Each run's converged scenes, reported or not, are merged into a reference of about 21,400 flat states sampled independently of the solver (10,386 flat landings of the landing law and Majid's stable poses), already grouped into components by the same checked joins at $h = 0.25\,$mm and used only as stepping stones. The first merge pass gives every converged scene a component label. A reported scene is a <em>first find</em> when no earlier reported scene has its label; the <strong>distinct share</strong> is first finds over reported scenes. A component is <em>lost</em> when the run converged in it but every scene there was judged the same as an earlier one. Two scenes in different components are separated at the planner's resolution; separation is not proved.</p>
 
-<h2 id="s11">11. Open points</h2>
-<ul><li><strong>Giant components.</strong> Three components hold about 70% of the reference's flat states. Most of the remaining repeats fall in them: their converged scenes lie far apart, beyond the component metric's 12 cm reach. Joins through a denser set of flat states (the solver's own landing-law samples, joined over several passes) connect them.</li>
-<li><strong>The swarm is mostly off the flat set.</strong> The local floor sets a stationary spread equal to the spacing of the flat arrivals, which is wide compared with the thin input regions that land flat. Over 300 iterations only 8-11% of the flat particles are still flat after a step, the noise is about four times the drift (0.09-0.11 against 0.025-0.027 per step, normalised inputs), and the consensus spread changes by a factor of about 0.99 per step rather than contracting at $\rho = 0.73$. Clusters therefore converge as measures over many basins, and the reported scene is the flat landing nearest their consensus point.</li>
-<li><strong>The metric is used at the report only.</strong> It decides which converged scenes are reported; it does not enter the consensus kernel, so a consensus measure can still couple particles of different components.</li>
-<li><strong>Lost components.</strong> About 10% of the components the swarm converged in were judged the same as an earlier scene and never reported. Confirming each deciding join at $0.02\,$mm, finer than the narrowest gaps between components, would remove false joins at small cost.</li>
+<h2 id="s12">12. Open points</h2>
+<ul><li><strong>Giant components.</strong> Three components hold about 70% of the reference's flat states. Most of the remaining repeats fall in them: their converged scenes lie far apart, beyond the report's range $R_m$. Joins through a denser set of flat states (the solver's own landing-law samples, joined over several passes) connect them.</li>
+<li><strong>The swarm is mostly off the flat set.</strong> The local floor sets a stationary spread equal to the spacing of the flat arrivals, which is wide compared with the thin input regions that land flat. Over 300 iterations only 8-11% of the flat particles are still flat after a step, the noise is about four times the drift, and the consensus spread changes by a factor of about 0.99 per step rather than contracting at $\rho$. Clusters converge as measures over many basins, and the reported scene is the flat landing nearest their consensus point.</li>
+<li><strong>The component metric is used at the report only.</strong> It decides which converged scenes are reported; it does not enter the consensus kernel, so a consensus measure can still couple particles of different components.</li>
+<li><strong>Lost components.</strong> About 10% of the components the swarm converged in were judged the same as an earlier scene and never reported. Confirming each deciding join at a spacing below the narrowest gaps would remove false joins at small cost.</li>
 <li><strong>Separation.</strong> Two scenes in different components are separated at the planner's resolution; no certificate proves them separate.</li>
 <li><strong>Model.</strong> With $\mu = 10$ the friction cones have a half-angle of about 84°, and the mug's wall is 24 flat boxes, so a few equilibria (a spoon held by its shaft tip in a crease between two wall facets) exist only in the model.</li></ul>
-<p><strong>Code:</strong> <code>code/mug_spoon/pcbo3d.cpp</code>, <code>landing3d.hpp</code>, <code>strata3d.hpp</code>, <code>join3d.hpp</code>, <code>oracle3d.hpp</code>. <strong>Notes:</strong> <code>Docs/majid/pcbo_lessons_synthesis.md</code> (Section 12).</p>
     </article>
   </div>
 </div></section>
