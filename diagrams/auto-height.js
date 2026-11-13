@@ -1,0 +1,1 @@
+(() => {let last=0;const send=()=>{const h=Math.ceil(document.body.getBoundingClientRect().height)+4;if(Math.abs(h-last)>1){last=h;parent.postMessage({type:'q13-diagram-height',height:h},location.origin);}};new ResizeObserver(send).observe(document.body);addEventListener('load',send);send();})();

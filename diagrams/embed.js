@@ -1,0 +1,1 @@
+addEventListener('message',e=>{if(e.origin!==location.origin||e.data?.type!=='q13-diagram-height')return;const f=[...document.querySelectorAll('iframe.q13-diagram')].find(x=>x.contentWindow===e.source);const h=Number(e.data.height);if(f&&Number.isFinite(h)&&h>=200&&h<=3000)f.style.height=Math.ceil(h)+'px';});

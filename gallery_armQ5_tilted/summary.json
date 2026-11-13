@@ -1,0 +1,44 @@
+{
+ "run": "r363/objective_study/armQ5_tilted_to100",
+ "update": 100,
+ "points": 10000,
+ "energy_zero": 9704,
+ "static10": 9698,
+ "shown": 180,
+ "shown_by_band": {
+  "<=1 mm": 143,
+  "1-2 mm": 20,
+  "2-5 mm": 16,
+  "5-10 mm": 0,
+  "10-20 mm": 0,
+  "20-50 mm": 0,
+  "> 50 mm": 1
+ },
+ "points_by_band": {
+  "<=1 mm": 9698,
+  "1-2 mm": 257,
+  "2-5 mm": 41,
+  "5-10 mm": 0,
+  "10-20 mm": 0,
+  "20-50 mm": 0,
+  "> 50 mm": 4
+ },
+ "families_all": {
+  "Mug tilted, spoon on the table apart": 6636,
+  "Mug tilted, spoon leaning on the mug, foot on the table": 3277,
+  "Mug tilted, spoon on the table against the mug": 80,
+  "Mug tilted, spoon inside the mug": 7
+ },
+ "families_static10": {
+  "Mug tilted, spoon on the table apart": 6349,
+  "Mug tilted, spoon leaning on the mug, foot on the table": 3266,
+  "Mug tilted, spoon on the table against the mug": 76,
+  "Mug tilted, spoon inside the mug": 7
+ },
+ "families_energy_zero": {
+  "Mug tilted, spoon on the table apart": 6354,
+  "Mug tilted, spoon leaning on the mug, foot on the table": 3266,
+  "Mug tilted, spoon on the table against the mug": 77,
+  "Mug tilted, spoon inside the mug": 7
+ }
+}

@@ -1,0 +1,50 @@
+{
+ "run": "r363/objective_study/armQ5_upright_to100",
+ "update": 100,
+ "points": 10000,
+ "energy_zero": 9758,
+ "static10": 8441,
+ "shown": 291,
+ "shown_by_band": {
+  "<=1 mm": 165,
+  "1-2 mm": 31,
+  "2-5 mm": 38,
+  "5-10 mm": 18,
+  "10-20 mm": 15,
+  "20-50 mm": 13,
+  "> 50 mm": 11
+ },
+ "points_by_band": {
+  "<=1 mm": 8441,
+  "1-2 mm": 523,
+  "2-5 mm": 444,
+  "5-10 mm": 465,
+  "10-20 mm": 30,
+  "20-50 mm": 48,
+  "> 50 mm": 49
+ },
+ "families_all": {
+  "Mug upright, spoon on the table apart": 6468,
+  "Mug upright, spoon resting on the mug": 2051,
+  "Mug upright, spoon leaning on the mug, foot on the table": 1347,
+  "Mug upright, spoon inside the mug": 93,
+  "Mug upright, spoon propped steeply on the mug": 35,
+  "Mug upright, spoon on the table against the mug": 6
+ },
+ "families_static10": {
+  "Mug upright, spoon on the table apart": 6248,
+  "Mug upright, spoon resting on the mug": 729,
+  "Mug upright, spoon leaning on the mug, foot on the table": 1343,
+  "Mug upright, spoon inside the mug": 93,
+  "Mug upright, spoon propped steeply on the mug": 23,
+  "Mug upright, spoon on the table against the mug": 5
+ },
+ "families_energy_zero": {
+  "Mug upright, spoon on the table apart": 6252,
+  "Mug upright, spoon resting on the mug": 2039,
+  "Mug upright, spoon leaning on the mug, foot on the table": 1346,
+  "Mug upright, spoon inside the mug": 93,
+  "Mug upright, spoon propped steeply on the mug": 23,
+  "Mug upright, spoon on the table against the mug": 5
+ }
+}

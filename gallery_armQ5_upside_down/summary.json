@@ -1,0 +1,44 @@
+{
+ "run": "r363/objective_study/armQ5_upside_down_N2000_to100",
+ "update": 100,
+ "points": 2000,
+ "energy_zero": 1770,
+ "static10": 1503,
+ "shown": 173,
+ "shown_by_band": {
+  "<=1 mm": 91,
+  "1-2 mm": 19,
+  "2-5 mm": 20,
+  "5-10 mm": 8,
+  "10-20 mm": 7,
+  "20-50 mm": 15,
+  "> 50 mm": 13
+ },
+ "points_by_band": {
+  "<=1 mm": 1503,
+  "1-2 mm": 133,
+  "2-5 mm": 102,
+  "5-10 mm": 39,
+  "10-20 mm": 66,
+  "20-50 mm": 114,
+  "> 50 mm": 43
+ },
+ "families_all": {
+  "Mug upside down, spoon on the table apart": 1453,
+  "Mug upside down, spoon resting on the mug": 416,
+  "Mug upside down, spoon leaning on the mug, foot on the table": 130,
+  "Mug upside down, spoon on the table against the mug": 1
+ },
+ "families_static10": {
+  "Mug upside down, spoon on the table apart": 1250,
+  "Mug upside down, spoon resting on the mug": 123,
+  "Mug upside down, spoon leaning on the mug, foot on the table": 129,
+  "Mug upside down, spoon on the table against the mug": 1
+ },
+ "families_energy_zero": {
+  "Mug upside down, spoon on the table apart": 1253,
+  "Mug upside down, spoon resting on the mug": 387,
+  "Mug upside down, spoon leaning on the mug, foot on the table": 129,
+  "Mug upside down, spoon on the table against the mug": 1
+ }
+}

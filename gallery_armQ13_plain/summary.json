@@ -1,0 +1,71 @@
+{
+ "run": "r363/objective_study/armQ13_F_both_th0.1_rho1_none_world_to250",
+ "update": 250,
+ "points": 10000,
+ "energy_zero": 5734,
+ "static10": 4728,
+ "shown": 602,
+ "shown_by_band": {
+  "<=1 mm": 316,
+  "1-2 mm": 125,
+  "2-5 mm": 82,
+  "5-10 mm": 47,
+  "10-20 mm": 18,
+  "20-50 mm": 8,
+  "> 50 mm": 6
+ },
+ "points_by_band": {
+  "<=1 mm": 4728,
+  "1-2 mm": 4730,
+  "2-5 mm": 410,
+  "5-10 mm": 86,
+  "10-20 mm": 23,
+  "20-50 mm": 14,
+  "> 50 mm": 9
+ },
+ "families_all": {
+  "Mug on its side, spoon on the table apart": 6283,
+  "Mug upside down, spoon on the table apart": 1456,
+  "Mug upright, spoon on the table apart": 1195,
+  "Mug on its side, spoon on the table against the mug": 486,
+  "Mug upright, spoon on the table against the mug": 158,
+  "Mug on its side, spoon leaning on the mug, foot on the table": 145,
+  "Mug upside down, spoon on the table against the mug": 112,
+  "Mug on its side, spoon inside the mug": 61,
+  "Mug upright, spoon resting on the mug": 48,
+  "Mug upside down, spoon resting on the mug": 37,
+  "Mug upside down, spoon leaning on the mug, foot on the table": 14,
+  "Mug on its side, spoon resting on the mug": 3,
+  "Mug on its side, spoon propped steeply on the mug": 2
+ },
+ "families_static10": {
+  "Mug on its side, spoon on the table apart": 2909,
+  "Mug upside down, spoon on the table apart": 608,
+  "Mug upright, spoon on the table apart": 584,
+  "Mug on its side, spoon on the table against the mug": 342,
+  "Mug upright, spoon on the table against the mug": 45,
+  "Mug on its side, spoon leaning on the mug, foot on the table": 87,
+  "Mug upside down, spoon on the table against the mug": 64,
+  "Mug on its side, spoon inside the mug": 57,
+  "Mug upright, spoon resting on the mug": 16,
+  "Mug upside down, spoon resting on the mug": 5,
+  "Mug upside down, spoon leaning on the mug, foot on the table": 11,
+  "Mug on its side, spoon resting on the mug": 0,
+  "Mug on its side, spoon propped steeply on the mug": 0
+ },
+ "families_energy_zero": {
+  "Mug on its side, spoon on the table apart": 3448,
+  "Mug upside down, spoon on the table apart": 780,
+  "Mug upright, spoon on the table apart": 603,
+  "Mug on its side, spoon on the table against the mug": 446,
+  "Mug upright, spoon on the table against the mug": 138,
+  "Mug on its side, spoon leaning on the mug, foot on the table": 97,
+  "Mug upside down, spoon on the table against the mug": 97,
+  "Mug on its side, spoon inside the mug": 60,
+  "Mug upright, spoon resting on the mug": 38,
+  "Mug upside down, spoon resting on the mug": 16,
+  "Mug upside down, spoon leaning on the mug, foot on the table": 11,
+  "Mug on its side, spoon resting on the mug": 0,
+  "Mug on its side, spoon propped steeply on the mug": 0
+ }
+}

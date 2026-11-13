@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Two representations of one scene</title><link rel="stylesheet" href="diagram-base.css"></head><body><div class="pair">
+<section><h3>Physical scene s: two body poses</h3>
+<div class="scene-stage" id="physical-view"><canvas class="scene" role="img" aria-label="Physical scene with world axes, body axes, a translation vector, centre of mass and a material point"></canvas><canvas class="overlay" aria-hidden="true"></canvas></div>
+<label class="note">Inspect body <select id="selected-body"><option value="1">Spoon</option><option value="0">Mug</option></select></label>
+<div class="vectors"><div>Body: <span id="body-name"></span> · p = <output id="point-local"></output></div>
+<div>t<sub>b</sub> = <output id="translation"></output></div><div>y<sub>b</sub> = R<sub>b</sub>p + t<sub>b</sub> = <output id="point-world"></output></div></div>
+<p class="note">The blue axes are the body frame, carried into the world by R<sub>b</sub>. The hollow marker is the body origin; COM marks its centre of mass.</p></section>
+<section><h3>Particle coordinates x: a relative description</h3>
+<div class="scene-stage" id="polar-view"><canvas class="scene" role="img" aria-label="The same scene with polar separation, direction angle, horizontal centre-of-mass positions and the direction-aligned frame"></canvas><canvas class="overlay" aria-hidden="true"></canvas></div>
+<div class="vectors"><div><output id="polar-equation"></output></div><div>R<sub>spoon</sub> = R<sub>z</sub>(φ) Q</div><div id="placement-order"></div></div>
+<p class="note">The purple axes turn through φ. Q describes the spoon in that frame. Keep Q fixed and change φ to carry the spoon around the mug.</p></section></div>
+<div class="controls">
+<label for="radius"><span>Separation rL <output id="radius-value"></output></span><input id="radius" type="range" min="140" max="202" step="1" value="165"></label>
+<label for="direction"><span>Direction φ <output id="direction-value"></output></span><input id="direction" type="range" min="-180" max="180" step="1" value="15"></label>
+<label for="relative"><span>Relative spoon turn within Q <output id="relative-value"></output></span><input id="relative" type="range" min="-20" max="20" step="1" value="0"></label>
+<label for="tilt"><span><span>Mug tilt within R<sub>mug</sub></span> <output id="tilt-value"></output></span><input id="tilt" type="range" min="-12" max="12" step="1" value="7"></label>
+<label for="order"><span>Placement order</span><select id="order"><option value="1">ξ = +1 · mug first</option><option value="-1">ξ = −1 · spoon first</option></select></label>
+</div>
+<div class="readouts">Geometrically supplied COM heights: <output id="heights"></output></div>
+<p class="explain">The shared controls describe x; both views show the same s = T(x). The table gauge holds the mug COM above the horizontal origin and fixes common yaw. L = 100 mm. Drag either view to rotate it; arrow keys also rotate a focused view.</p>
+<p class="note">This illustration uses separated bodies, with Q = R<sub>z</sub>(relative turn) R<sub>x</sub>(π/2) and mug tilt about one axis. It shows a slice of the rotation space. Here T supplies the exact table-contact heights, so changing placement order leaves the scene unchanged. Section 3 defines placement with inter-body obstacles.</p><script src="body-data.js"></script><script src="viewer.js"></script><script src="coordinates.js"></script><script src="auto-height.js"></script></body></html>
