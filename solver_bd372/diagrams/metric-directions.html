@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>How each direction of the coordinates moves the material</title><link rel="stylesheet" href="diagram-base.css">
+<style>.stage-big{height:430px}.legend{display:flex;gap:6px 18px;font-size:12.5px;color:var(--text-secondary);flex-wrap:wrap;margin:4px 0}.sw{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+#info{font-size:13.5px;line-height:1.55;margin:8px 0;min-height:3.1em}#info b{font-weight:600}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}@media(max-width:820px){.layout{grid-template-columns:1fr}}
+.lengths h4{font-size:13px;font-weight:600;margin:8px 0 2px}.lengths p{margin:0 0 6px}.lengths button{display:grid;grid-template-columns:132px 1fr 46px;gap:8px;align-items:center;width:100%;padding:3px 6px;margin:1px 0;border:1px solid transparent;background:none;border-radius:4px;text-align:left;font-size:12px;font-variant-numeric:tabular-nums;color:var(--text-secondary)}
+.lengths button:hover{border-color:var(--grid)}.lengths button.on{border-color:var(--series-1);color:var(--text-primary)}.lengths .bar{position:relative;height:8px}.lengths .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:0 2px 2px 0}.lengths .val{text-align:right}</style></head><body>
+<div class="controls">
+<label for="scene"><span>Scene (a static outcome of the run)</span><select id="scene"></select></label>
+<label for="dir"><span>Direction of the step</span><select id="dir"></select></label>
+<label for="mode"><span>Size of the step</span><select id="mode"><option value="coord">the same step in the coordinates: 0.15</option><option value="material">the same material length: 5 mm</option></select></label>
+<div class="actions" style="align-self:end"><button id="play" type="button" aria-pressed="true">Pause</button><label style="display:flex;flex-direction:row;align-items:center;gap:6px;font-size:13px"><input id="arrows" type="checkbox" checked> arrows</label></div>
+</div>
+<div class="layout">
+<div>
+<div class="scene-stage stage-big" id="view"><canvas class="scene" role="img" aria-label="The mug and spoon moving back and forth along the chosen direction, with arrows showing where surface points go"></canvas><canvas class="overlay" aria-hidden="true"></canvas></div>
+<div class="legend"><span><i class="sw" style="background:var(--series-1)"></i>mug surface points</span><span><i class="sw" style="background:var(--series-2)"></i>spoon surface points</span><span>outline: the scene before the step · drag to turn</span></div>
+<p id="info" aria-live="polite"></p>
+</div>
+<div class="lengths" id="lengths" aria-label="Material length of a unit step in every direction"></div>
+</div>
+<p class="explain">The arrows run from surface points of the two bodies to where one step in the chosen direction takes them, and the bodies swing back and forth along the same step. The step is shown with the gauge part removed: a step and the same step followed by a shift or turn of the whole scene count as one, and the figure shows the one that moves the material least. That is why a change of the offset moves the mug as well as the spoon, each by half. The list on the right gives, for this scene, the material length √(vᵀGv) of a unit step v in every direction, in millimetres; click an entry to show it. The heights from the lowering are not part of the metric and are not applied here.</p>
+<script src="body-data.js"></script><script src="viewer.js"></script><script src="aniso-data.js"></script><script src="aniso-common.js"></script><script src="metric-directions.js"></script><script src="auto-height.js"></script>
+</body></html>

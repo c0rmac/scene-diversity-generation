@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Isotropic and shaped noise, in the coordinates and in the material</title><link rel="stylesheet" href="diagram-base.css">
+<style>#cloud{width:100%;height:380px;display:block;margin:8px 0;cursor:grab;touch-action:none}#cloud:active{cursor:grabbing}.scene-stage{height:380px}
+.legend{display:flex;gap:6px 18px;font-size:12.5px;color:var(--text-secondary);flex-wrap:wrap;margin:2px 0}.dotsw{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:middle;margin-right:6px}
+.stats{font-size:13px;line-height:1.55;font-variant-numeric:tabular-nums;margin:6px 0}.stats b{font-weight:600}</style></head><body>
+<div class="controls">
+<label for="scene"><span>Scene (a static outcome of the run)</span><select id="scene"></select></label>
+<label for="noise"><span>Noise applied to the scene</span><select id="noise"><option value="iso">isotropic: η = a z</option><option value="shaped" selected>shaped: η = a G̃^(−1/2) z</option></select></label>
+<label for="units"><span>Axes of the cloud measured in</span><select id="units"><option value="coord">the coordinates (eigen-coordinates of η)</option><option value="material" selected>material displacement, mm</option></select></label>
+<label for="amp"><span>Amplitude a <output id="amp-v"></output></span><input id="amp" type="range" min="1" max="8" step="1" value="4"></label>
+</div>
+<div class="pair">
+<section><h3>300 draws along three eigen-directions of G̃</h3>
+<canvas id="cloud" tabindex="0" role="img" aria-label="Three-dimensional cloud of noise draws along the soft, middle and stiff eigen-directions"></canvas>
+<div class="legend"><span><i class="dotsw" style="background:var(--series-1)"></i>isotropic noise</span><span><i class="dotsw" style="background:var(--series-2)"></i>shaped noise</span><span>grey circles: a sphere · drag to turn</span></div>
+</section>
+<section><h3>One draw applied to the scene</h3>
+<div class="scene-stage" id="view"><canvas class="scene" role="img" aria-label="The scene moved by one noise draw, with the outline of the scene before the step"></canvas><canvas class="overlay" aria-hidden="true"></canvas></div>
+<div class="actions"><button id="play" type="button" aria-pressed="true">Pause</button><button id="next" type="button">Next draw</button><span class="note" id="drawinfo" aria-live="polite"></span></div>
+</section>
+</div>
+<p class="stats" id="stats"></p>
+<p class="explain">Both noises use the same 300 standard normal vectors z and the same amplitude a, so the two clouds are paired draw by draw. The cloud on the left shows each draw η along three eigen-directions of G̃ at this scene: the softest (the spoon rolling about its shaft), a middle one and the stiffest (the table above describes them). Measured in the coordinates, the isotropic draws fill a sphere and the shaped draws stretch along the soft direction; measured as material displacement, the shaped draws fill a sphere and the isotropic draws are squashed along the soft direction. The scene on the right is moved by the rigid motion of one draw, before the drift and the lowering, with the outline of the scene before the step.</p>
+<script src="body-data.js"></script><script src="viewer.js"></script><script src="aniso-data.js"></script><script src="aniso-common.js"></script><script src="noise-shapes.js"></script><script src="auto-height.js"></script>
+</body></html>
