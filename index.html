@@ -114,6 +114,7 @@ html{scroll-behavior:smooth}
 <main>
 <h1>Consensus on where a release ends: finding the resting scenes of a mug and a spoon</h1>
 <p class="abstract"><strong>Abstract.</strong> We propose a way to find the families of resting scenes of a mug and a spoon on a table, from the spoon lying beside the mug to the spoon standing inside it, starting from random placements only. Particles of polarised consensus-based optimisation search a space of touching scenes, in which each body is lowered until it touches. Both the objective and the distance between particles are taken from a one-second simulated release: a particle is scored by how far the release carries its scene, and two particles count as near only if their scenes start near each other and end near each other.</p>
+<p class="note">A later formulation, which adds a birth&ndash;death step over contact types, has its own page: <a href="solver_bd372/index.html">Consensus with births and deaths over contact types</a>.</p>
 
 <h2 id="scenes">1. Choosing the search space</h2>
 <p>We want to arrange a mug and a spoon on a table so that, when released, they stay where they are. There can be many families of such arrangements: the spoon can lie beside the mug, lean against it, rest across its rim or stand inside it. The aim is to keep scenes from as many families as possible in one population of particles.</p>
