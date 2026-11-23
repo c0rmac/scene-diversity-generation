@@ -1,0 +1,58 @@
+{
+ "created": "2026-11-23",
+ "sources": {
+  "pair_chart_v1.py": "8c2c50bfcf0490a7caf3faeff6b0a097870409b43ddcd4243514f22443a7762e",
+  "pair_chart_v2.py": "a0332590c971cd27037063510b5304b57120dd147b0b795fa19793c46fb32d01",
+  "pockets_v1.py": "dbaad72c0c50414b1b66767747ed4d30d148e5567c8b98c5ab2b002c4ed6e281",
+  "exact_v1.py": "c3d4f59cde9ac454bfd74208de65ca81b24a422a983404542731d393ef5a26a4",
+  "exact_v3.py": "ffa60bd2bf77b2dc3eeeca55b679ab94c5b83effd9d0563bbf09c90aad0d103b",
+  "generic_partition_v1.py": "a15e66c859f7a937deacc25bc877202c0058010f30abbc25bc41769b65ff1ae0",
+  "vertical_lift_v1.cpp": "449478ea8e7077a671decb5173f31a617d113541be54d6132b5658a5a4890fcd",
+  "gauge_cells_v2.py": "8e6e9971a28eb5a72469fbdffa4f4a40ae8c4865ba0eb9ff768472f52fe29890"
+ },
+ "data": {
+  "bodies.npz": "28e18bbbcf86d6d57b906c75b969f6e4ee03a1a31cc38ee7654c363d6ad59352",
+  "pockets.npz": "164612e13e330bd6296e37d1b1a28d0a84eee8f93508be8df1fe2490c4a1d0ef",
+  "postures.json": "9481a56d3234815f7924c17907e3d4e288adec8c42af7a8332908ba0859f2d8d",
+  "primitives.json": "ea3147b991f719714a7b787b60b4d4c37bb9a3398e1ba8319d4b016020192d88"
+ },
+ "fixtures": {
+  "map_free": {
+   "source": "out/geom_k1_s11_point.npz",
+   "sha256": "be8dbcfd6cd3640f661790573a7cc7933433785ce620ff384641752dfa24992f",
+   "states": 200
+  },
+  "map_stable": {
+   "source": "out/stable_s11.npz",
+   "sha256": "0e2d2c3a84a9d67b4dc12b7c7f55566b7999d80e54a9518da18e5b467a76f4ea",
+   "states": 200
+  },
+  "map_upright": {
+   "source": "out/stable_s11_pupright.npz",
+   "sha256": "21b39eb0f738afa6d678e96185ceab14826f792ed4205d144c965daf2aa2bff1",
+   "states": 200
+  },
+  "law_free": {
+   "source": "research pair_chart_v2, sample_start(300, 11)",
+   "seconds": 16.644408226013184
+  },
+  "law_cup": {
+   "source": "research pair_chart_v2, sample_start(300, 11)",
+   "seconds": 37.16812014579773
+  },
+  "law_stable": {
+   "source": "research pair_chart_v2, sample_start(300, 11)",
+   "seconds": 12.90681004524231
+  },
+  "law_upright": {
+   "source": "research pair_chart_v2, sample_start(300, 11)",
+   "seconds": 9.820165157318115
+  },
+  "pocket1_mask_mug": {
+   "source": "research chart.pocket_mask(0, 1)",
+   "share": 0.404815673828125
+  }
+ },
+ "lowest_numpy_vs_research_cpp_max_m": 2.220446049250313e-16,
+ "seconds": 93.34242510795593
+}

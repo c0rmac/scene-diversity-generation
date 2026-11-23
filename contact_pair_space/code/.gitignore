@@ -1,0 +1,7 @@
+contact_pair/_native/*.dylib
+contact_pair/_native/*.so
+__pycache__/
+*.pyc
+scenes.npz
+pockets_recomputed.npz
+postures_recomputed.json
