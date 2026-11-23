@@ -1,0 +1,309 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Where the spoon is touched</title><style>:root{color-scheme:light;--page:#f9f9f7;--surface-1:#fcfcfb;--text-primary:#0b0b0b;--text-secondary:#52514e;--muted:#898781;--grid:#e1e0d9;--series-1:#2a78d6;--series-2:#eb6834}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--page:#0d0d0d;--surface-1:#1a1a19;--text-primary:#f0efec;--text-secondary:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--series-1:#3987e5;--series-2:#d95926}}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--text-primary);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}h2,h3,p{margin:0}h2,h3{font-size:15px;font-weight:600}p{margin:8px 0}.note,.text-small{font-size:12.5px}.note,.text-muted{color:var(--text-secondary)}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.pair>section{min-width:0}.scene-stage{width:100%;height:340px;position:relative;margin:8px 0}.scene-stage>canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.scene-stage>.overlay{pointer-events:none}.scene-stage>.scene{cursor:grab}.scene-stage>.scene:active{cursor:grabbing}.scene-stage[data-error]::after{content:attr(data-error);position:absolute;inset:20px}
+.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px;margin:12px 0}.controls label{display:flex;flex-direction:column;gap:3px;font-size:13px}.controls label>span{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.controls input[type=range]{width:100%;accent-color:var(--series-1)}select,button{font:inherit;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--grid);border-radius:5px;padding:6px 10px;max-width:100%}button{cursor:pointer}button:disabled{opacity:.5;cursor:default}button:focus-visible,select:focus-visible,input:focus-visible,canvas:focus-visible{outline:2px solid var(--series-1);outline-offset:3px}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:8px 0}.readouts{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:13px;font-variant-numeric:tabular-nums}.vectors{font-size:12.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.vectors div{margin:3px 0}.accent{color:var(--series-1)}.rho{color:var(--series-2)}.formula{margin-top:8px}.explain{margin:10px 0;font-size:13px;line-height:1.55}.sr-only{position:absolute;clip:rect(0,0,0,0);width:1px;height:1px;overflow:hidden}.wide-stage{height:400px}
+@media(max-width:720px){.pair{grid-template-columns:1fr}.scene-stage{height:320px}.controls{grid-template-columns:1fr}.wide-stage{height:360px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+
+input[type=range]{margin:0}
+</style><style>.check,.pick{display:inline-flex;align-items:center;gap:6px;font-size:13px}.bar{width:100%;max-width:420px;height:32px;display:block}.state{font-weight:600}</style></head><body>
+<div class="actions"><label class="pick" for="w">Contacts <select id="w"><option value="all">all</option><option value="floor">on the floor of the cup</option></select></label></div>
+<p id="loading" class="note">Loading…</p>
+<div class="scene-stage wide-stage" id="view"><canvas class="scene" role="img" aria-label="The spoon coloured by how often each place of it is the contact"></canvas><canvas class="overlay" aria-hidden="true"></canvas></div>
+<canvas class="bar" id="bar"></canvas><div class="readouts"><span id="read"></span></div>
+<p class="note">Drag to turn, scroll to zoom, arrow keys to move the view.</p>
+<script>
+const BODIES = {"mug":[{"type":"cylinder","size":[0.049,0.004,0.0],"pos":[0.0,0.0,0.004],"R":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.045,0.0,0.054],"R":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.043466662183,0.0116468570296,0.054],"R":[0.9659258262891076,-0.2588190451023742,0.0,0.2588190451023742,0.9659258262891076,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0389711431703,0.0225,0.054],"R":[0.8660254037839584,-0.5000000000008326,0.0,0.5000000000008326,0.8660254037839584,0.0,0.0,0.0,1.0000000000000004]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0318198051534,0.0318198051534,0.054],"R":[0.7071067811865097,-0.7071067811865854,0.0,0.7071067811865854,0.7071067811865097,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0225,0.0389711431703,0.054],"R":[0.4999999999996202,-0.8660254037846581,0.0,0.8660254037846581,0.4999999999996202,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0116468570296,0.043466662183,0.054],"R":[0.2588190451018161,-0.9659258262892573,0.0,0.9659258262892573,0.2588190451018161,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[2.75545529808e-18,0.045,0.054],"R":[0.0,-0.9999999999999998,0.0,0.9999999999999998,0.0,0.0,0.0,0.0,0.9999999999999998]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0116468570296,0.043466662183,0.054],"R":[-0.2588190451018161,-0.9659258262892573,0.0,0.9659258262892573,-0.2588190451018161,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0225,0.0389711431703,0.054],"R":[-0.4999999999996202,-0.8660254037846581,0.0,0.8660254037846581,-0.4999999999996202,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0318198051534,0.0318198051534,0.054],"R":[-0.7071067811865097,-0.7071067811865854,0.0,0.7071067811865854,-0.7071067811865097,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0389711431703,0.0225,0.054],"R":[-0.866025403783958,-0.5000000000008323,0.0,0.5000000000008323,-0.866025403783958,0.0,0.0,0.0,0.9999999999999999]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.043466662183,0.0116468570296,0.054],"R":[-0.9659258262891076,-0.2588190451023742,0.0,0.2588190451023742,-0.9659258262891076,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.045,5.51091059616e-18,0.054],"R":[-1.0,-1.224646799148e-16,0.0,1.224646799148e-16,-1.0,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.043466662183,-0.0116468570296,0.054],"R":[-0.9659258262891076,0.2588190451023742,0.0,-0.2588190451023742,-0.9659258262891076,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0389711431703,-0.0225,0.054],"R":[-0.866025403783958,0.5000000000008323,0.0,-0.5000000000008323,-0.866025403783958,0.0,0.0,0.0,0.9999999999999999]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0318198051534,-0.0318198051534,0.054],"R":[-0.7071067811865097,0.7071067811865854,0.0,-0.7071067811865854,-0.7071067811865097,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0225,-0.0389711431703,0.054],"R":[-0.4999999999996202,0.8660254037846581,0.0,-0.8660254037846581,-0.4999999999996202,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0116468570296,-0.043466662183,0.054],"R":[-0.2588190451018161,0.9659258262892573,0.0,-0.9659258262892573,-0.2588190451018161,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-8.26636589424e-18,-0.045,0.054],"R":[0.0,0.9999999999999998,0.0,-0.9999999999999998,0.0,0.0,0.0,0.0,0.9999999999999998]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0116468570296,-0.043466662183,0.054],"R":[0.2588190451018161,0.9659258262892573,0.0,-0.9659258262892573,0.2588190451018161,-0.0,-0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0225,-0.0389711431703,0.054],"R":[0.4999999999996202,0.8660254037846581,0.0,-0.8660254037846581,0.4999999999996202,-0.0,-0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0318198051534,-0.0318198051534,0.054],"R":[0.7071067811865097,0.7071067811865854,0.0,-0.7071067811865854,0.7071067811865097,-0.0,-0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0389711431703,-0.0225,0.054],"R":[0.8660254037839584,0.5000000000008326,0.0,-0.5000000000008326,0.8660254037839584,-0.0,-0.0,0.0,1.0000000000000004]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.043466662183,-0.0116468570296,0.054],"R":[0.9659258262891076,0.2588190451023742,0.0,-0.2588190451023742,0.9659258262891076,-0.0,-0.0,0.0,1.0]},{"type":"capsule","size":[0.004,0.00468669613722,0.0],"pos":[0.0496587428118,0.0,0.0205111126057],"R":[0.1090560579777769,0.0,0.994035601081947,0.0,1.0,0.0,-0.994035601081947,0.0,0.1090560579777769]},{"type":"capsule","size":[0.004,0.00459260658204,0.0],"pos":[0.0586587428118,0.0,0.0225207315489],"R":[0.32628667637746345,0.0,0.9452708632019443,0.0,1.0000000000000002,0.0,-0.9452708632019443,0.0,0.32628667637746345]},{"type":"capsule","size":[0.004,0.00442490755072,0.0],"pos":[0.0667279220614,0.0,0.0264030172254],"R":[0.5387184504181223,0.0,0.8424858640826548,0.0,1.0,0.0,-0.8424858640826548,0.0,0.5387184504181223]},{"type":"capsule","size":[0.004,0.00422298897727,0.0],"pos":[0.0733163793295,0.0,0.0318933982822],"R":[0.7356404988313024,0.0,0.6773721698440472,0.0,1.0000000000000002,0.0,-0.6773721698440472,0.0,0.7356404988313024]},{"type":"capsule","size":[0.004,0.0040399761778,0.0],"pos":[0.0779751221413,0.0,0.0386177143235],"R":[0.8954791227100038,0.0,0.44510351693793887,0.0,1.0,0.0,-0.44510351693793887,0.0,0.8954791227100038]},{"type":"capsule","size":[0.004,0.00393043535146,0.0],"pos":[0.0803866648732,0.0,0.0461177143235],"R":[0.9877495313833148,0.0,0.1560476313567184,0.0,1.0000000000000002,0.0,-0.1560476313567184,0.0,0.9877495313833148]},{"type":"capsule","size":[0.004,0.00393043535146,0.0],"pos":[0.0803866648732,0.0,0.0538822856765],"R":[0.9877495313833148,0.0,-0.1560476313567184,-0.0,1.0000000000000002,0.0,0.1560476313567184,0.0,0.9877495313833148]},{"type":"capsule","size":[0.004,0.0040399761778,0.0],"pos":[0.0779751221413,0.0,0.0613822856765],"R":[0.8954791227100038,0.0,-0.44510351693793887,-0.0,1.0,0.0,0.44510351693793887,0.0,0.8954791227100038]},{"type":"capsule","size":[0.004,0.00422298897727,0.0],"pos":[0.0733163793295,0.0,0.0681066017178],"R":[0.7356404988313024,0.0,-0.6773721698440472,-0.0,1.0000000000000002,0.0,0.6773721698440472,0.0,0.7356404988313024]},{"type":"capsule","size":[0.004,0.00442490755072,0.0],"pos":[0.0667279220614,0.0,0.0735969827746],"R":[0.5387184504181223,0.0,-0.8424858640826548,-0.0,1.0,0.0,0.8424858640826548,0.0,0.5387184504181223]},{"type":"capsule","size":[0.004,0.00459260658204,0.0],"pos":[0.0586587428118,0.0,0.0774792684511],"R":[0.32628667637746345,0.0,-0.9452708632019443,-0.0,1.0000000000000002,0.0,0.9452708632019443,0.0,0.32628667637746345]},{"type":"capsule","size":[0.004,0.00468669613722,0.0],"pos":[0.0496587428118,0.0,0.0794888873943],"R":[0.1090560579777769,0.0,-0.994035601081947,-0.0,1.0,0.0,0.994035601081947,0.0,0.1090560579777769]}],"spoon":[{"type":"ellipsoid","size":[0.014,0.004,0.023],"pos":[0.0,0.0,0.0],"R":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0]},{"type":"capsule","size":[0.003,0.0735,0.0],"pos":[0.0,0.0,0.0915],"R":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0]}]};
+const DIAGRAM_COM = [[0.006, 0.0, 0.048], [0.0, 0.0, 0.045]];
+</script>
+<script>
+const VS = `attribute vec3 p; attribute vec3 n; uniform mat4 M, VP; uniform mat3 NM; varying vec3 vn; varying vec3 wp;
+  void main(){ vec4 w = M*vec4(p,1.0); wp = w.xyz; vn = NM*n; gl_Position = VP*w; }`;
+const FS = `precision mediump float; varying vec3 vn; varying vec3 wp; uniform vec4 col; uniform int mode; uniform vec3 L;
+  void main(){ if(mode==1){ gl_FragColor = vec4(0.0,0.0,0.0,0.28); return; }
+    vec3 c = col.rgb;
+    if(mode==2){ gl_FragColor = col; return; }
+    float d = max(dot(normalize(vn), -L), 0.0); gl_FragColor = vec4(c*(0.42+0.58*d), col.a); }`;
+function norm(v){ const l=Math.hypot(...v)||1; return v.map(x=>x/l); }
+function cross(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+function dot(a,b){ return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+function sphereLike(rx, ry, rz, zoff, half){ // half: 0 full, 1 upper (z>=0), -1 lower
+  const P=[], Q=[], nu=28, nv=14;
+  const th = (j)=> half===1 ? (j/nv)*Math.PI/2 : half===-1 ? Math.PI/2 + (j/nv)*Math.PI/2 : (j/nv)*Math.PI;
+  const pt = (i,j)=>{ const t=th(j), f=2*Math.PI*i/nu; const x=Math.sin(t)*Math.cos(f), y=Math.sin(t)*Math.sin(f), z=Math.cos(t);
+    return [[rx*x, ry*y, rz*z+zoff], norm([x/rx, y/ry, z/rz])]; };
+  for(let j=0;j<nv;j++) for(let i=0;i<nu;i++){ const a=pt(i,j), b=pt(i+1,j), c=pt(i+1,j+1), d=pt(i,j+1);
+    for(const q of [a,b,c,a,c,d]){ P.push(...q[0]); Q.push(...q[1]); } }
+  return [P,Q];
+}
+function cylinder(r, h){ const P=[],Q=[],nu=36;
+  for(let i=0;i<nu;i++){ const f0=2*Math.PI*i/nu, f1=2*Math.PI*(i+1)/nu, c0=Math.cos(f0), s0=Math.sin(f0), c1=Math.cos(f1), s1=Math.sin(f1);
+    const q=[[r*c0,r*s0,-h],[r*c1,r*s1,-h],[r*c1,r*s1,h],[r*c0,r*s0,h]], nn=[[c0,s0,0],[c1,s1,0],[c1,s1,0],[c0,s0,0]];
+    for(const k of [0,1,2,0,2,3]){ P.push(...q[k]); Q.push(...nn[k]); }
+    for(const z of [h,-h]){ const tri=[[0,0,z],[r*c0,r*s0,z],[r*c1,r*s1,z]]; for(const v of (z>0?tri:[tri[0],tri[2],tri[1]])){ P.push(...v); Q.push(0,0,Math.sign(z)); } } }
+  return [P,Q]; }
+function capsule(r, h){ const [P1,N1]=cylinder(r,h); const [P2,N2]=sphereLike(r,r,r,h,1); const [P3,N3]=sphereLike(r,r,r,-h,-1);
+  return [P1.concat(P2,P3), N1.concat(N2,N3)]; }
+function box(a,b,c){ const P=[],Q=[]; const F=[[[1,0,0],[0,1,0],[0,0,1]],[[-1,0,0],[0,0,1],[0,1,0]],[[0,1,0],[0,0,1],[1,0,0]],[[0,-1,0],[1,0,0],[0,0,1]],[[0,0,1],[1,0,0],[0,1,0]],[[0,0,-1],[0,1,0],[1,0,0]]];
+  const s=[a,b,c]; for(const [n,u,v] of F){ const cpt=(su,sv)=>[0,1,2].map(k=>n[k]*s[k]+su*u[k]*s[k]+sv*v[k]*s[k]);
+    const q=[cpt(-1,-1),cpt(1,-1),cpt(1,1),cpt(-1,1)]; for(const k of [0,1,2,0,2,3]){ P.push(...q[k]); Q.push(...n); } }
+  return [P,Q]; }
+function geomMesh(g){ const s=g.size; switch(g.type){
+  case 'box': return box(s[0],s[1],s[2]); case 'cylinder': return cylinder(s[0],s[1]); case 'capsule': return capsule(s[0],s[1]);
+  case 'ellipsoid': return sphereLike(s[0],s[1],s[2],0,0); default: return sphereLike(s[0],s[0],s[0],0,0); } }
+function geomRadius(g){ const s=g.size; switch(g.type){ case 'box': return Math.hypot(s[0],s[1],s[2]); case 'cylinder': return Math.hypot(s[0],s[1]);
+  case 'capsule': return s[0]+s[1]; case 'ellipsoid': return Math.max(s[0],s[1],s[2]); default: return s[0]; } }
+// matrices (column-major 4x4); R is a row-major 3x3
+function mat(R,t){ return [R[0],R[3],R[6],0, R[1],R[4],R[7],0, R[2],R[5],R[8],0, t[0],t[1],t[2],1]; }
+function mul(a,b){ const o=new Array(16).fill(0); for(let i=0;i<4;i++) for(let j=0;j<4;j++) for(let k=0;k<4;k++) o[j*4+i]+=a[k*4+i]*b[j*4+k]; return o; }
+function persp(f,asp,n,fr){ const t=1/Math.tan(f/2); return [t/asp,0,0,0, 0,t,0,0, 0,0,(fr+n)/(n-fr),-1, 0,0,2*fr*n/(n-fr),0]; }
+function lookAt(e,c,u){ const z=norm([e[0]-c[0],e[1]-c[1],e[2]-c[2]]), x=norm(cross(u,z)), y=cross(z,x);
+  return [x[0],y[0],z[0],0, x[1],y[1],z[1],0, x[2],y[2],z[2],0, -dot(x,e),-dot(y,e),-dot(z,e),1]; }
+const LIGHT = norm([-0.35,-0.45,-1.0]), FOV = 0.75;
+const SHADOW = [1,0,0,0, 0,1,0,0, -LIGHT[0]/LIGHT[2],-LIGHT[1]/LIGHT[2],0,0, 0,0,0.0003,1];
+function makeRenderer(cv){
+  const gl = cv.getContext('webgl', {antialias: true}); if(!gl) return null;
+  const sh = (t, src) => { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+  const prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
+  const U = n => gl.getUniformLocation(prog, n), A = n => gl.getAttribLocation(prog, n);
+  const buf = arr => { const b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.STATIC_DRAW); return b; };
+  const MESH = {}; for(const name of ['mug','spoon']) MESH[name] = BODIES[name].map(g=>{ const [P,Q]=geomMesh(g); return {p:buf(P), n:buf(Q), cnt:P.length/3, g}; });
+  const r = 0.6, tableMesh = {p:buf([-r,-r,0, r,-r,0, r,r,0, -r,-r,0, r,r,0, -r,r,0]), n:buf([0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1]), cnt:6};
+  const bind = m => { gl.bindBuffer(gl.ARRAY_BUFFER,m.p); gl.enableVertexAttribArray(A('p')); gl.vertexAttribPointer(A('p'),3,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER,m.n); gl.enableVertexAttribArray(A('n')); gl.vertexAttribPointer(A('n'),3,gl.FLOAT,false,0,0); };
+  return function(x, view, wpx, hpx){
+    if(cv.width!==wpx||cv.height!==hpx){ cv.width=wpx; cv.height=hpx; }
+    gl.viewport(0,0,wpx,hpx); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
+    const tg=view.target, e=[tg[0]+view.dist*Math.cos(view.el)*Math.cos(view.az), tg[1]+view.dist*Math.cos(view.el)*Math.sin(view.az), tg[2]+view.dist*Math.sin(view.el)];
+    const VP = mul(persp(FOV, wpx/hpx, 0.005, 5), lookAt(e, tg, [0,0,1]));
+    gl.uniformMatrix4fv(U('VP'), false, VP); gl.uniform3fv(U('L'), LIGHT);
+    if(!x.outlineMask){
+    gl.uniform1i(U('mode'),2); gl.uniform4fv(U('col'), getComputedStyle(document.body).colorScheme==='dark'?[.10,.11,.12,1]:[.95,.953,.957,1]); gl.uniformMatrix4fv(U('M'),false,[1,0,0,0,0,1,0,0,0,0,1,0,tg[0],tg[1],0,1]);
+    gl.uniformMatrix3fv(U('NM'),false,[1,0,0,0,1,0,0,0,1]); bind(tableMesh); gl.drawArrays(gl.TRIANGLES,0,tableMesh.cnt);
+    }
+    const parts=[];
+    ['mug','spoon'].forEach((name,b)=>{ if(x.outlineBody!==undefined&&b!==x.outlineBody)return; const P=x.pose[b], Rb=P.slice(0,9), tb=P.slice(9);
+      MESH[name].forEach(m=>{ parts.push({m, M: mul(mat(Rb, tb), mat(m.g.R, m.g.pos)), col: name==='mug' ? [0.36,0.42,0.48,(x.mugAlpha===undefined?1:x.mugAlpha)] : [0.75,0.39,0.17,1]}); }); });
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.uniform1i(U('mode'),1);
+    if(!x.outlineMask) for(const q of parts){ gl.uniformMatrix4fv(U('M'),false,mul(SHADOW,q.M)); bind(q.m); gl.drawArrays(gl.TRIANGLES,0,q.m.cnt); }
+    gl.depthMask(true); gl.disable(gl.BLEND); gl.uniform1i(U('mode'),0);
+    const drawPart=q=>{ const M=q.M; gl.uniformMatrix4fv(U('M'),false,M); gl.uniformMatrix3fv(U('NM'),false,[M[0],M[1],M[2],M[4],M[5],M[6],M[8],M[9],M[10]]);
+      gl.uniform4fv(U('col'),q.col); bind(q.m); gl.drawArrays(gl.TRIANGLES,0,q.m.cnt); };
+    for(const q of parts) if(q.col[3]>=1) drawPart(q);
+    const clear=parts.filter(q=>q.col[3]<1);
+    if(clear.length){ gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); for(const q of clear) drawPart(q); gl.depthMask(true); gl.disable(gl.BLEND); }
+  };
+}
+// framing of one scene: centre and radius of a sphere that contains both bodies
+function sceneBounds(x){
+  const cs=[]; ['mug','spoon'].forEach((name,b)=>{ const P=x.pose[b], R=P.slice(0,9), t=P.slice(9);
+    BODIES[name].forEach(g=>{ const q=g.pos; cs.push([[R[0]*q[0]+R[1]*q[1]+R[2]*q[2]+t[0], R[3]*q[0]+R[4]*q[1]+R[5]*q[2]+t[1], R[6]*q[0]+R[7]*q[1]+R[8]*q[2]+t[2]], geomRadius(g)]); }); });
+  const lo=[1e9,1e9,1e9], hi=[-1e9,-1e9,-1e9];
+  for(const [c,r] of cs) for(let k=0;k<3;k++){ lo[k]=Math.min(lo[k],c[k]-r); hi[k]=Math.max(hi[k],c[k]+r); }
+  const ctr=[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2,Math.max(0,(lo[2]+hi[2])/2)]; let rad=0;
+  for(const [c,r] of cs) rad=Math.max(rad, Math.hypot(c[0]-ctr[0],c[1]-ctr[1],c[2]-ctr[2])+r);
+  const tm=x.pose[0].slice(9), ts=x.pose[1].slice(9), d=Math.hypot(ts[0]-tm[0], ts[1]-tm[1]);
+  return {ctr, rad, az: (d>1e-6 ? Math.atan2(ts[1]-tm[1], ts[0]-tm[0]) : 0) - Math.PI/2};   // camera to the side of the mug-spoon line
+}
+
+// Shared viewer for explanatory figures; no optimizer or physical transitions.
+class SceneDiagramView {
+  constructor(host, options={}) {
+    this.canvas=host.querySelector('canvas.scene');this.overlay=host.querySelector('canvas.overlay');
+    this.ctx=this.overlay.getContext('2d');this.render=makeRenderer(this.canvas);this.host=host;
+    this.view={az:-.9,el:.65,dist:.65,target:[.045,-.025,.045],...options};
+    this.pose=null;this.decorate=null;this.queued=false;
+    let drag=null;this.canvas.tabIndex=0;
+    this.canvas.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY];this.canvas.setPointerCapture(e.pointerId);});
+    this.canvas.addEventListener('pointermove',e=>{if(!drag)return;this.view.az-=(e.clientX-drag[0])*.009;this.view.el=Math.max(.12,Math.min(1.5,this.view.el+(e.clientY-drag[1])*.007));drag=[e.clientX,e.clientY];this.draw();});
+    for(const event of ['pointerup','pointercancel'])this.canvas.addEventListener(event,()=>{drag=null;});
+    this.canvas.addEventListener('keydown',e=>{const a={ArrowLeft:[-.12,0],ArrowRight:[.12,0],ArrowUp:[0,.1],ArrowDown:[0,-.1]}[e.key];if(a){e.preventDefault();this.view.az+=a[0];this.view.el=Math.max(.12,Math.min(1.5,this.view.el+a[1]));this.draw();}});
+    new ResizeObserver(()=>this.draw()).observe(host);
+    matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>this.draw());
+  }
+  set(pose,decorate){this.pose=pose;this.decorate=decorate;this.draw();}
+  draw(){if(!this.pose||this.queued)return;this.queued=true;requestAnimationFrame(()=>this.paint());}
+  paint(){
+    this.queued=false;const box=this.host.getBoundingClientRect(),w=box.width,h=box.height,dpr=Math.min(2,devicePixelRatio||1);
+    this.w=w;this.h=h;const v={...this.view,dist:this.view.dist*Math.max(1,1.05/(w/h))};
+    if(!this.render){this.host.setAttribute('data-error','This diagram requires WebGL.');return;}
+    this.render({pose:this.pose,mugAlpha:this.mugAlpha},v,Math.round(w*dpr),Math.round(h*dpr));
+    this.overlay.width=Math.round(w*dpr);this.overlay.height=Math.round(h*dpr);this.ctx.setTransform(dpr,0,0,dpr,0,0);this.ctx.clearRect(0,0,w,h);
+    const t=v.target,e=[t[0]+v.dist*Math.cos(v.el)*Math.cos(v.az),t[1]+v.dist*Math.cos(v.el)*Math.sin(v.az),t[2]+v.dist*Math.sin(v.el)];
+    this.VP=mul(persp(FOV,w/h,.005,5),lookAt(e,t,[0,0,1]));
+    this.ink=getComputedStyle(document.body).color;this.bg=getComputedStyle(document.body).backgroundColor;
+    if(this.decorate)this.decorate(this);
+  }
+  project(p){const q=[...p,1],z=[0,1,2,3].map(i=>q.reduce((s,x,k)=>s+this.VP[k*4+i]*x,0));return[(z[0]/z[3]+1)*this.w/2,(1-z[1]/z[3])*this.h/2];}
+  line(a,b,color=this.ink,dash=[],width=1.5){const p=this.project(a),q=this.project(b),c=this.ctx;c.strokeStyle=color;c.lineWidth=width;c.setLineDash(dash);c.beginPath();c.moveTo(...p);c.lineTo(...q);c.stroke();c.setLineDash([]);return[p,q];}
+  arrow(a,b,color=this.ink,dash=[]){const[p,q]=this.line(a,b,color,dash),d=[q[0]-p[0],q[1]-p[1]],l=Math.hypot(...d);if(l<7)return;const u=d.map(x=>x/l),c=this.ctx;c.strokeStyle=color;c.beginPath();c.moveTo(q[0]-7*u[0]+3*u[1],q[1]-7*u[1]-3*u[0]);c.lineTo(...q);c.lineTo(q[0]-7*u[0]-3*u[1],q[1]-7*u[1]+3*u[0]);c.stroke();}
+  dot(p,color=this.ink,hollow=false,size=3.3){const q=this.project(p),c=this.ctx;c.beginPath();c.arc(...q,size,0,2*Math.PI);c.fillStyle=hollow?this.bg:color;c.fill();c.lineWidth=1.4;c.strokeStyle=color;c.stroke();}
+  label(p,text,dx=7,dy=-7,color=this.ink){const q=this.project(p),c=this.ctx;c.font='13px system-ui, sans-serif';const width=c.measureText(text).width;const x=Math.max(4,Math.min(this.w-width-4,q[0]+dx)),y=Math.max(16,Math.min(this.h-8,q[1]+dy));c.fillStyle=this.bg;c.fillRect(x-2,y-13,width+4,17);c.fillStyle=color;c.fillText(text,x,y);}
+  initialOutlines(pose,colors){
+    // Reference geometry is cached until the release scene, camera or size changes.
+    // Render each initial body without table/shadows; its alpha silhouette gives
+    // the actual projected outline, including the handle opening.
+    const dpr=Math.min(2,devicePixelRatio||1),w=this.canvas.width,h=this.canvas.height;
+    const key=JSON.stringify([pose,this.view,w,h,colors]);
+    if(this.outlineKey!==key){
+      if(!this.outlineRenderer){this.outlineMask=document.createElement('canvas');this.outlineRenderer=makeRenderer(this.outlineMask);}
+      if(!this.outlineRenderer)return;
+      if(!this.outlineImage){this.outlineImage=document.createElement('canvas');this.outlineScratch=document.createElement('canvas');this.outlineEdge=document.createElement('canvas');}
+      const mask=this.outlineScratch,edge=this.outlineEdge;
+      for(const cv of [this.outlineImage,mask,edge])if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+      const result=this.outlineImage.getContext('2d');result.clearRect(0,0,w,h);
+      const m=mask.getContext('2d'),e=edge.getContext('2d'),offset=Math.max(1,Math.round(1.2*dpr));
+      const camera={...this.view,dist:this.view.dist*Math.max(1,1.05/(this.w/this.h))};
+      for(let b=0;b<2;b++){
+        this.outlineRenderer({pose,outlineMask:true,outlineBody:b},camera,w,h);
+        m.globalCompositeOperation='source-over';m.clearRect(0,0,w,h);m.drawImage(this.outlineMask,0,0);
+        m.globalCompositeOperation='source-in';m.fillStyle=colors[b];m.fillRect(0,0,w,h);m.globalCompositeOperation='source-over';
+        e.globalCompositeOperation='source-over';e.clearRect(0,0,w,h);
+        for(const [dx,dy]of[[-offset,0],[offset,0],[0,-offset],[0,offset],[-offset,-offset],[offset,offset],[-offset,offset],[offset,-offset]])e.drawImage(mask,dx,dy);
+        e.globalCompositeOperation='destination-out';e.drawImage(mask,0,0);e.globalCompositeOperation='source-over';
+        result.drawImage(edge,0,0);
+      }
+      this.outlineKey=key;
+    }
+    this.ctx.save();this.ctx.globalAlpha=.72;this.ctx.drawImage(this.outlineImage,0,0,this.w,this.h);this.ctx.restore();
+  }
+  fit(poses){const bs=poses.map(p=>sceneBounds({pose:p})),lo=[0,1,2].map(k=>Math.min(...bs.map(b=>b.ctr[k]-b.rad))),hi=[0,1,2].map(k=>Math.max(...bs.map(b=>b.ctr[k]+b.rad)));this.view.target=lo.map((x,k)=>(x+hi[k])/2);const r=Math.max(...bs.map(b=>Math.hypot(...b.ctr.map((x,k)=>x-this.view.target[k]))+b.rad));this.view.dist=Math.max(.3,1.05*r/Math.sin(FOV/2));}
+}
+window.SceneDiagramView=SceneDiagramView;
+window.SceneGeometry={mat,mul,world:(p,pose)=>[0,1,2].map(i=>pose[3*i]*p[0]+pose[3*i+1]*p[1]+pose[3*i+2]*p[2]+pose[9+i])};
+</script>
+<script>
+// Small WebGL viewer of the explanatory 3D figures (23 Nov 2026): lit triangle meshes with per-vertex colours (the bodies' primitives
+// from body-data.js via the shared viewer's geomMesh, spheres, or given triangles), round point sprites with per-point colours, and
+// lines. Drag turns the view, the wheel zooms, the arrow keys move the centre of the view (Shift with an arrow turns it).
+const C3VS = `attribute vec3 p; attribute vec3 n; attribute vec4 c; uniform mat4 VP; varying vec3 vn; varying vec4 vc;
+  void main(){ vn = n; vc = c; gl_Position = VP*vec4(p,1.0); }`;
+const C3FS = `precision mediump float; varying vec3 vn; varying vec4 vc; uniform vec3 L; uniform float lit; uniform float alpha;
+  void main(){ float d = abs(dot(normalize(vn), -L)); vec3 k = mix(vc.rgb, vc.rgb*(0.45+0.6*d), lit); gl_FragColor = vec4(k, vc.a*alpha); }`;
+const C3PV = `attribute vec3 p; attribute vec4 c; uniform mat4 VP; uniform float size; varying vec4 vc; void main(){ vc = c; gl_Position = VP*vec4(p,1.0); gl_PointSize = size; }`;
+const C3PF = `precision mediump float; varying vec4 vc; void main(){ vec2 q = gl_PointCoord*2.0-1.0; if(dot(q,q)>1.0) discard; gl_FragColor = vc; }`;
+const C3_LIGHT = norm([-0.35, -0.45, -1.0]);
+function c3hex(h, a = 1) { const v = parseInt(h.slice(1), 16); return [(v >> 16 & 255) / 255, (v >> 8 & 255) / 255, (v & 255) / 255, a]; }
+function c3pose(P) { return { R: P.slice(0, 9), t: P.slice(9, 12) }; }
+function c3apply(R, t, x) { return [R[0] * x[0] + R[1] * x[1] + R[2] * x[2] + t[0], R[3] * x[0] + R[4] * x[1] + R[5] * x[2] + t[1], R[6] * x[0] + R[7] * x[1] + R[8] * x[2] + t[2]]; }
+// triangles of a body at pose P (12 numbers): positions, normals and one colour
+function c3body(name, P, col, scale = 1, skip = null) {
+  const { R, t } = c3pose(P), pos = [], nor = [], cols = [];
+  for (const g of BODIES[name]) {
+    if (skip && skip(g)) continue;
+    const [Q, N] = geomMesh(g), Rg = g.R, pg = g.pos;
+    for (let k = 0; k < Q.length; k += 3) {
+      const loc = c3apply(Rg, pg, [Q[k], Q[k + 1], Q[k + 2]]), w = c3apply(R, t, loc), nl = c3apply(Rg, [0, 0, 0], [N[k], N[k + 1], N[k + 2]]), nw = c3apply(R, [0, 0, 0], nl);
+      pos.push(w[0] * scale, w[1] * scale, w[2] * scale); nor.push(...nw); cols.push(...col);
+    }
+  }
+  return { pos, nor, cols };
+}
+// a low-poly unit sphere (icosahedron subdivided once), reused for balls
+const C3SPH = (() => { const t = (1 + Math.sqrt(5)) / 2; let V = [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]].map(norm);
+  let F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+  for (let s = 0; s < 2; s++) { const m = {}, F2 = []; const mid = (a, b) => { const k = a < b ? a + ',' + b : b + ',' + a; if (m[k] === undefined) { V.push(norm(V[a].map((x, i) => x + V[b][i]))); m[k] = V.length - 1; } return m[k]; };
+    for (const [a, b, c] of F) { const ab = mid(a, b), bc = mid(b, c), ca = mid(c, a); F2.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]); } F = F2; }
+  return F.flatMap(f => f.map(i => V[i])); })();
+function c3needles(pts, ns, len, r, col, every = 1) { const pos = [], nor = [], cols = [], K = 6;
+  for (let i = 0; i < pts.length; i += every) { const p = pts[i], n = norm(ns[i]), e1 = norm(cross(n, Math.abs(n[0]) < .9 ? [1, 0, 0] : [0, 1, 0])), e2 = cross(n, e1), tip = p.map((x, k) => x + len * n[k]);
+    for (let j = 0; j < K; j++) { const a0 = 2 * Math.PI * j / K, a1 = 2 * Math.PI * (j + 1) / K, d0 = e1.map((x, k) => Math.cos(a0) * x + Math.sin(a0) * e2[k]), d1 = e1.map((x, k) => Math.cos(a1) * x + Math.sin(a1) * e2[k]);
+      const b0 = p.map((x, k) => x + r * d0[k]), b1 = p.map((x, k) => x + r * d1[k]); pos.push(...b0, ...b1, ...tip); nor.push(...d0, ...d1, ...norm(d0.map((x, k) => x + d1[k]))); cols.push(...col, ...col, ...col); } }
+  return { pos, nor, cols }; }
+function c3balls(list, col) { const pos = [], nor = [], cols = []; for (const b of list) { const r = b[3]; for (const v of C3SPH) { pos.push(b[0] + r * v[0], b[1] + r * v[1], b[2] + r * v[2]); nor.push(...v); cols.push(...col); } } return { pos, nor, cols }; }
+
+class Concept3D {
+  constructor(host, opt = {}) {
+    this.host = host; this.canvas = host.querySelector('canvas.scene'); this.overlay = host.querySelector('canvas.overlay'); this.ctx = this.overlay ? this.overlay.getContext('2d') : null;
+    const gl = this.gl = this.canvas.getContext('webgl', { antialias: true, premultipliedAlpha: false }); if (!gl) { host.setAttribute('data-error', 'This diagram requires WebGL.'); return; }
+    const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o; };
+    const prog = (v, f) => { const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, v)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, f)); gl.linkProgram(p); return p; };
+    this.pm = prog(C3VS, C3FS); this.pp = prog(C3PV, C3PF); this.items = []; this.view = Object.assign({ az: -0.9, el: 0.55, dist: 0.5, target: [0, 0, 0.05], fov: 0.75 }, opt); this.decorate = null; this.queued = false;
+    let drag = null; this.canvas.tabIndex = 0;
+    this.canvas.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY]; this.canvas.setPointerCapture(e.pointerId); this.canvas.focus({ preventScroll: true }); this.down = [e.clientX, e.clientY]; });
+    this.canvas.addEventListener('pointermove', e => { if (!drag) return; this.view.az -= (e.clientX - drag[0]) * .009; this.view.el = Math.max(-1.5, Math.min(1.5, this.view.el + (e.clientY - drag[1]) * .007)); drag = [e.clientX, e.clientY]; this.draw(); });
+    for (const ev of ['pointerup', 'pointercancel']) this.canvas.addEventListener(ev, e => { if (drag && this.onclick && this.down && Math.hypot(e.clientX - this.down[0], e.clientY - this.down[1]) < 4) { const r = this.canvas.getBoundingClientRect(); this.onclick(e.clientX - r.left, e.clientY - r.top); } drag = null; });
+    this.canvas.addEventListener('wheel', e => { e.preventDefault(); this.view.dist *= Math.exp(e.deltaY * 0.0012); this.view.dist = Math.max(0.004, Math.min(5, this.view.dist)); this.draw(); }, { passive: false });
+    this.canvas.addEventListener('keydown', e => { const a = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key]; if (!a) return; e.preventDefault();
+      if (e.shiftKey) { this.view.az += 0.12 * a[0]; this.view.el = Math.max(-1.5, Math.min(1.5, this.view.el + 0.1 * a[1])); }
+      else { const s = 0.06 * this.view.dist, az = this.view.az, r = [-Math.sin(az), Math.cos(az), 0], f = [-Math.cos(az), -Math.sin(az), 0]; const T = this.view.target;
+        this.view.target = [T[0] + s * (a[0] * r[0] + a[1] * f[0]), T[1] + s * (a[0] * r[1] + a[1] * f[1]), T[2]]; if (e.altKey) this.view.target[2] += s * a[1]; }
+      this.draw(); });
+    new ResizeObserver(() => this.draw()).observe(host); matchMedia('(prefers-color-scheme:dark)').addEventListener('change', () => this.draw());
+  }
+  _buf(arr) { const gl = this.gl, b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, arr instanceof Float32Array ? arr : new Float32Array(arr), gl.STATIC_DRAW); return b; }
+  clear() { const gl = this.gl; for (const it of this.items) for (const b of [it.p, it.n, it.c]) if (b) gl.deleteBuffer(b); this.items = []; }
+  mesh(m, opt = {}) { if (!this.gl || !m.pos.length) return; this.items.push({ kind: 'mesh', p: this._buf(m.pos), n: this._buf(m.nor), c: this._buf(m.cols), cnt: m.pos.length / 3, alpha: opt.alpha ?? 1, lit: opt.lit ?? 1, offset: opt.offset ?? true, cull: !!opt.cull }); }
+  points(pos, cols, size = 4) { if (!this.gl || !pos.length) return; this.items.push({ kind: 'points', p: this._buf(pos), c: this._buf(cols), cnt: pos.length / 3, size }); }
+  lines(pos, cols) { if (!this.gl || !pos.length) return; this.items.push({ kind: 'lines', p: this._buf(pos), c: this._buf(cols), cnt: pos.length / 3 }); }
+  draw() { if (this.queued) return; this.queued = true; requestAnimationFrame(() => this.paint()); }
+  eye() { const v = this.view, T = v.target; return [T[0] + v.dist * Math.cos(v.el) * Math.cos(v.az), T[1] + v.dist * Math.cos(v.el) * Math.sin(v.az), T[2] + v.dist * Math.sin(v.el)]; }
+  paint() {
+    this.queued = false; const gl = this.gl; if (!gl) return; const box = this.host.getBoundingClientRect(), w = box.width, h = box.height, dpr = Math.min(2, devicePixelRatio || 1); this.w = w; this.h = h;
+    const W = Math.round(w * dpr), H = Math.round(h * dpr); if (this.canvas.width !== W || this.canvas.height !== H) { this.canvas.width = W; this.canvas.height = H; }
+    const e = this.eye(), up = Math.abs(Math.cos(this.view.el)) < 1e-3 ? [Math.cos(this.view.az), Math.sin(this.view.az), 0] : [0, 0, 1]; this.VP = mul(persp(this.view.fov, w / h, Math.max(1e-4, this.view.dist * 0.01), this.view.dist * 20 + 1), lookAt(e, this.view.target, up));
+    gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
+    const bindA = (pr, name, b, k) => { const a = gl.getAttribLocation(pr, name); if (a < 0) return; gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, k, gl.FLOAT, false, 0, 0); };
+    const drawMesh = it => { const pr = this.pm; gl.useProgram(pr); gl.uniformMatrix4fv(gl.getUniformLocation(pr, 'VP'), false, this.VP); gl.uniform3fv(gl.getUniformLocation(pr, 'L'), C3_LIGHT); gl.uniform1f(gl.getUniformLocation(pr, 'lit'), it.lit); gl.uniform1f(gl.getUniformLocation(pr, 'alpha'), it.alpha);
+      bindA(pr, 'p', it.p, 3); bindA(pr, 'n', it.n, 3); bindA(pr, 'c', it.c, 4); if (it.offset) { gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1, 2); } if (it.cull) gl.enable(gl.CULL_FACE); gl.drawArrays(gl.TRIANGLES, 0, it.cnt); gl.disable(gl.POLYGON_OFFSET_FILL); gl.disable(gl.CULL_FACE); };
+    const drawPts = it => { const pr = this.pp; gl.useProgram(pr); gl.uniformMatrix4fv(gl.getUniformLocation(pr, 'VP'), false, this.VP); gl.uniform1f(gl.getUniformLocation(pr, 'size'), it.size * dpr); bindA(pr, 'p', it.p, 3); bindA(pr, 'c', it.c, 4); gl.drawArrays(it.kind === 'lines' ? gl.LINES : gl.POINTS, 0, it.cnt); };
+    for (const it of this.items) if (it.kind === 'mesh' && it.alpha >= 1) drawMesh(it);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    for (const it of this.items) if (it.kind !== 'mesh') drawPts(it);
+    gl.depthMask(false); for (const it of this.items) if (it.kind === 'mesh' && it.alpha < 1) drawMesh(it); gl.depthMask(true); gl.disable(gl.BLEND);
+    if (this.ctx) { this.overlay.width = W; this.overlay.height = H; this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); this.ctx.clearRect(0, 0, w, h); this.ink = getComputedStyle(document.body).color; this.bg = getComputedStyle(document.body).backgroundColor; if (this.decorate) this.decorate(this); }
+  }
+  project(p) { const q = [...p, 1], z = [0, 1, 2, 3].map(i => q.reduce((s, x, k) => s + this.VP[k * 4 + i] * x, 0)); return [(z[0] / z[3] + 1) * this.w / 2, (1 - z[1] / z[3]) * this.h / 2, z[3]]; }
+  label(p, text, dx = 7, dy = -7, color = this.ink, size = 13) { const q = this.project(p), c = this.ctx; c.font = size + 'px system-ui, sans-serif'; const wd = c.measureText(text).width, x = Math.max(4, Math.min(this.w - wd - 4, q[0] + dx)), y = Math.max(16, Math.min(this.h - 6, q[1] + dy)); c.fillStyle = this.bg; c.globalAlpha = .75; c.fillRect(x - 3, y - size, wd + 6, size + 5); c.globalAlpha = 1; c.fillStyle = color; c.fillText(text, x, y); }
+}
+window.Concept3D = Concept3D;
+// colour scales: a diverging one about 1 (log2 ratio in [-1, 1]: blue below, grey at 1, orange above) and a sequential one
+function c3div(r, span = 1) { const x = Math.max(-1, Math.min(1, Math.log2(Math.max(r, 1e-6)) / span)), g = [0.62, 0.62, 0.6], lo = [0.16, 0.45, 0.82], hi = [0.87, 0.42, 0.13], e = x < 0 ? lo : hi, a = Math.abs(x); return [g[0] + (e[0] - g[0]) * a, g[1] + (e[1] - g[1]) * a, g[2] + (e[2] - g[2]) * a, 1]; }
+const C3SEQ = [[0.96, 0.93, 0.80], [0.98, 0.75, 0.42], [0.91, 0.45, 0.25], [0.68, 0.18, 0.37], [0.35, 0.08, 0.42]];
+function c3seq(x) { x = Math.max(0, Math.min(1, x)) * (C3SEQ.length - 1); const i = Math.min(C3SEQ.length - 2, Math.floor(x)), f = x - i, a = C3SEQ[i], b = C3SEQ[i + 1]; return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f, 1]; }
+function c3bar(cv, fn, ticks) { const dpr = Math.min(2, devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight; cv.width = w * dpr; cv.height = h * dpr; const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+  for (let i = 0; i < w - 20; i++) { const k = fn(i / (w - 21)); c.fillStyle = `rgb(${k[0] * 255},${k[1] * 255},${k[2] * 255})`; c.fillRect(10 + i, 0, 1.5, 12); }
+  c.fillStyle = getComputedStyle(document.body).color; c.font = '12px system-ui'; ticks.forEach(([x, s], k) => { c.textAlign = k === 0 && x === 0 ? 'left' : (k === ticks.length - 1 && x === 1 ? 'right' : 'center'); c.fillText(s, 10 + x * (w - 21) + (c.textAlign === 'left' ? -10 : c.textAlign === 'right' ? 10 : 0), 27); }); }
+</script>
+<script>
+// shared bits of the explanatory 3D figures: ink colour, a table, overlay arrows and dots, the smallest rotation taking a onto b
+function cInk(){const m=getComputedStyle(document.body).color.match(/\d+/g).map(Number);return[m[0]/255,m[1]/255,m[2]/255,1];}
+function cDark(){return matchMedia('(prefers-color-scheme:dark)').matches;}
+function cTable(cx=0,cy=0,r=.3,z=0){const c=cDark()?[.15,.15,.14,1]:[.92,.915,.9,1],P=[[cx-r,cy-r],[cx+r,cy-r],[cx+r,cy+r],[cx-r,cy-r],[cx+r,cy+r],[cx-r,cy+r]];return{pos:P.flatMap(p=>[p[0],p[1],z]),nor:P.flatMap(()=>[0,0,1]),cols:P.flatMap(()=>c)};}
+function cArrow(w,a,b,col,lw=2){const p=w.project(a),q=w.project(b),c=w.ctx,d=[q[0]-p[0],q[1]-p[1]],l=Math.hypot(...d);if(l<4)return;const u=d.map(x=>x/l);c.strokeStyle=col;c.fillStyle=col;c.lineWidth=lw;c.beginPath();c.moveTo(p[0],p[1]);c.lineTo(q[0]-6*u[0],q[1]-6*u[1]);c.stroke();c.beginPath();c.moveTo(q[0],q[1]);c.lineTo(q[0]-9*u[0]+4*u[1],q[1]-9*u[1]-4*u[0]);c.lineTo(q[0]-9*u[0]-4*u[1],q[1]-9*u[1]+4*u[0]);c.closePath();c.fill();}
+function cDot(w,p,col,r=4,ring=false){const q=w.project(p),c=w.ctx;c.beginPath();c.arc(q[0],q[1],r,0,2*Math.PI);if(ring){c.strokeStyle=col;c.lineWidth=2;c.stroke();}else{c.fillStyle=col;c.fill();c.strokeStyle=w.bg;c.lineWidth=1.2;c.stroke();}}
+function cMinrot(a,b){const v=cross(a,b),c=dot(a,b);if(c<-1+1e-9){const e=Math.abs(a[0])<.9?[1,0,0]:[0,1,0],w=norm(cross(a,e));return[0,1,2].flatMap(i=>[0,1,2].map(j=>2*w[i]*w[j]-(i===j?1:0)));}
+ const K=[0,-v[2],v[1],v[2],0,-v[0],-v[1],v[0],0],K2=[0,1,2].flatMap(i=>[0,1,2].map(j=>[0,1,2].reduce((s,k)=>s+K[3*i+k]*K[3*k+j],0)));return[0,1,2].flatMap(i=>[0,1,2].map(j=>(i===j?1:0)+K[3*i+j]+K2[3*i+j]/(1+c)));}
+const C_MUG=[.36,.42,.48,1],C_SPOON=[.75,.39,.17,1],C_BLUE='#2a78d6',C_RED='#c43c42',C_ORANGE='#d86b30';
+</script>
+<script>
+// Loads a data file of a figure as a script (no fetch, so the figure also works when the page is opened as a file), retries a dropped
+// connection, and says so in the figure when the data cannot be loaded. present(): is the data there; start(): draw the figure.
+// label: the text shown while loading. onFail (optional, for data asked for later): called when loading failed, controls usable again.
+function loadFigureData(src, present, start, label, onFail){
+ const note=document.getElementById('loading'),controls=()=>document.querySelectorAll('button,select,input');let k=0;
+ const begin=()=>{note.hidden=false;note.removeAttribute('role');note.textContent=label;for(const c of controls())c.disabled=true;};
+ const fail=()=>{note.setAttribute('role','alert');note.textContent='The data of this figure could not be loaded. ';const b=document.createElement('button');b.textContent='Try again';b.addEventListener('click',()=>{k=0;begin();go();});
+  if(onFail){for(const c of controls())c.disabled=false;onFail();}note.appendChild(b);};
+ const go=()=>{const s=document.createElement('script');s.src=src+(k?(src.includes('?')?'&':'?')+'retry='+k:'');
+  s.onload=()=>{if(!present()){fail();return;}note.hidden=true;for(const c of controls())c.disabled=false;start();};
+  s.onerror=()=>{s.remove();if(++k<=3)setTimeout(go,300*2**k);else fail();};document.head.appendChild(s);};
+ begin();go();
+}
+</script>
+<script>
+loadFigureData('data-concept-heat.js?v=2ab71ad56c',()=>typeof CONCEPT_HEAT!=='undefined',()=>{
+ const D=CONCEPT_HEAT.spoon,$=s=>document.querySelector(s),LIE=[0,0,1,1,0,0,0,1,0,-.072,0,.004],v=new Concept3D($('#view'),{dist:.17,el:.85,az:-Math.PI/2+.2,target:[0,0,0]});const R=LIE.slice(0,9),t=LIE.slice(9);
+ function build(){const w=$('#w').value,val=D[w];v.clear();v.mesh(c3body('spoon',LIE,cDark()?[.3,.32,.34,1]:[.82,.83,.84,1]));
+  const P=[],C=[];for(let k=0;k<D.p.length;k++){const p=c3apply(R,t,D.p[k]),n=c3apply(R,[0,0,0],D.n[k]);P.push(p[0]+9e-4*n[0],p[1]+9e-4*n[1],p[2]+9e-4*n[2]);C.push(...c3div(val[k],4));}v.points(P,C,5.2);
+  c3bar($('#bar'),x=>c3div(2**(8*x-4),4),[[0,'1/16 ×'],[.25,'¼ ×'],[.5,'1 × its share'],[.75,'4 ×'],[1,'16 ×']]);
+  const e=w==='all'?D.endsAll:D.endsFloor;$('#read').textContent=`The two ends of the spoon: ${(100*D.endsArea).toFixed(1)} % of its surface, ${(100*e).toFixed(0)} % of these ${(w==='all'?D.contactsAll:D.contactsFloor).toLocaleString('en')} contacts`;v.draw();}
+ $('#w').addEventListener('change',build);matchMedia('(prefers-color-scheme:dark)').addEventListener('change',build);build();
+},'Loading the sampled contacts…');
+</script>
+<script>
+// The message carries only the figure's height, so it is sent to any parent ('*'): a page opened as a file has no origin to name.
+(() => {let last=0;const target='*';const send=()=>{const h=Math.ceil(document.body.getBoundingClientRect().height)+4;if(Math.abs(h-last)>1){last=h;try{parent.postMessage({type:'scene-diagram-height',height:h},target);}catch(e){}}};new ResizeObserver(send).observe(document.body);addEventListener('load',send);send();})();
+</script>
+</body></html>
