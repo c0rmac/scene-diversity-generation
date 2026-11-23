@@ -1,0 +1,245 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sampled scenes of the contact-pair search space</title><style>:root{color-scheme:light;--page:#f9f9f7;--surface-1:#fcfcfb;--text-primary:#0b0b0b;--text-secondary:#52514e;--muted:#898781;--grid:#e1e0d9;--series-1:#2a78d6;--series-2:#eb6834}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--page:#0d0d0d;--surface-1:#1a1a19;--text-primary:#f0efec;--text-secondary:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--series-1:#3987e5;--series-2:#d95926}}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--text-primary);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}h2,h3,p{margin:0}h2,h3{font-size:15px;font-weight:600}p{margin:8px 0}.note,.text-small{font-size:12.5px}.note,.text-muted{color:var(--text-secondary)}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.pair>section{min-width:0}.scene-stage{width:100%;height:340px;position:relative;margin:8px 0}.scene-stage>canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.scene-stage>.overlay{pointer-events:none}.scene-stage>.scene{cursor:grab}.scene-stage>.scene:active{cursor:grabbing}.scene-stage[data-error]::after{content:attr(data-error);position:absolute;inset:20px}
+.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px;margin:12px 0}.controls label{display:flex;flex-direction:column;gap:3px;font-size:13px}.controls label>span{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.controls input[type=range]{width:100%;accent-color:var(--series-1)}select,button{font:inherit;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--grid);border-radius:5px;padding:6px 10px;max-width:100%}button{cursor:pointer}button:disabled{opacity:.5;cursor:default}button:focus-visible,select:focus-visible,input:focus-visible,canvas:focus-visible{outline:2px solid var(--series-1);outline-offset:3px}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:8px 0}.readouts{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:13px;font-variant-numeric:tabular-nums}.vectors{font-size:12.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.vectors div{margin:3px 0}.accent{color:var(--series-1)}.rho{color:var(--series-2)}.formula{margin-top:8px}.explain{margin:10px 0;font-size:13px;line-height:1.55}.sr-only{position:absolute;clip:rect(0,0,0,0);width:1px;height:1px;overflow:hidden}.wide-stage{height:400px}
+@media(max-width:720px){.pair{grid-template-columns:1fr}.scene-stage{height:320px}.controls{grid-template-columns:1fr}.wide-stage{height:360px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+
+input[type=range]{margin:0}
+</style><style>.check{display:inline-flex;align-items:center;gap:6px;font-size:13px}.pick{display:inline-flex;align-items:center;gap:6px;font-size:13px}.strip-box{display:flex;flex-direction:column;gap:3px;font-size:13px}.strip-box>span{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}#strip{width:100%;height:24px;display:block;cursor:pointer;touch-action:none}.state{font-weight:600}</style></head><body>
+<div class="actions"><label class="pick" for="domain">Sampled from <select id="domain"><option value="full">the whole surface</option><option value="cup">inside the cup only</option></select></label><button id="prev">Previous</button><button id="next">Next</button><button id="random">Random sample</button><label class="pick" for="mug">Mug <select id="mug"><option value="free">in any orientation</option><option value="stable">resting, any stable posture</option><option value="upright">resting upright</option></select></label><span class="note" id="sample-id"></span></div>
+<div class="actions"><label class="check"><input type="checkbox" id="ghost" checked> See-through mug</label><label class="check"><input type="checkbox" id="cloud"> Sampled contact points</label><label class="check"><input type="checkbox" id="pc"> Point clouds</label></div>
+<p id="loading" class="note">Loading the sampled scenes…</p>
+<div class="scene-stage wide-stage" id="view"><canvas class="scene" role="img" aria-label="A sampled scene: the mug and the spoon touching at the designated contact point, set on the table"></canvas><canvas class="overlay" aria-hidden="true"></canvas></div>
+<p class="note">Drag to turn the view. The dot is the designated contact point. Blue arrow: the mug's outward normal there. Orange arrow: the spoon's outward normal, turned to oppose it.</p>
+<div class="readouts" aria-live="off"><span>Contact place on the mug: <output id="where" class="state"></output></span><span>Spoon in the cup: <output id="incup" class="state"></output></span><span>Mug: <output id="posture" class="state"></output></span></div>
+<div class="readouts" aria-live="off"><span>Contact on the mug (its frame): <output id="pm"></output></span><span>on the spoon (its frame): <output id="ps"></output></span><span>Gravity in the mug's frame u: <output id="grav"></output></span></div>
+<div class="controls"><label for="turn"><span>Turn about the contact normal θ <output id="turn-v"></output></span><input id="turn" type="range" min="0" max="47" step="1" value="0"></label>
+<div class="strip-box"><span>Turns at which this pair can touch <output id="free-v"></output></span><canvas id="strip" role="img" aria-label="Which of the 48 turns are collision-free for this pair"></canvas></div></div>
+<div class="readouts" aria-live="polite"><span>This turn: <output id="state" class="state"></output></span></div>
+<p class="explain">Each sample is one draw of the starting law: a point on the mug, a point on the spoon, a turn and a direction of gravity. The scene shown first is the draw itself. Moving the slider keeps the two points and turns the spoon about the common normal in 48 steps. The strip marks the turns at which the spoon can touch the mug there without overlapping it elsewhere (filled) and those at which it cannot (hatched). At a blocked turn the map still returns a scene: the spoon is pushed out along the mug's normal until nothing overlaps, so it touches the mug somewhere else.</p>
+<p class="explain"><em>Sampled from</em> chooses the region in which the mug's contact place is drawn: its whole surface, or only the part that faces the inside of the cup. <em>Sampled contact points</em> marks where the contact places of 2,500 draws of the chosen region fall (blue on the mug, orange on the spoon). <em>Point clouds</em> shows the clouds themselves, thinned, in grey: the two are different things, and the floor of the cup is covered by the cloud although almost no contact falls on it.</p>
+<p class="explain"><em>Mug</em> chooses how the mug stands. <em>In any orientation</em>: the direction of gravity is sampled freely and the pair is set on the table by its lowest point. <em>Resting, any stable posture</em>: the mug takes one of its own resting postures, upright, upside down, or on its side with the handle down either way. <em>Resting upright</em>: the mug stands upright in every scene. In the last two the mug is set on the table by itself, and a turn is free only if the spoon touches the mug at the chosen points and also stays above the table; at a turn where the spoon would pass through the table it is raised straight up until it is clear.</p>
+<p class="note">The 80 samples of each region are the first 80 draws of seed 11, with no selection. Dots are drawn only on surfaces that face you. With the mug free the pair is set on the table by its lowest point, so most sampled scenes are not at rest; with the mug resting, the mug is at rest and the spoon usually is not. The second figure releases them.</p>
+<script>
+const BODIES = {"mug":[{"type":"cylinder","size":[0.049,0.004,0.0],"pos":[0.0,0.0,0.004],"R":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.045,0.0,0.054],"R":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.043466662183,0.0116468570296,0.054],"R":[0.9659258262891076,-0.2588190451023742,0.0,0.2588190451023742,0.9659258262891076,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0389711431703,0.0225,0.054],"R":[0.8660254037839584,-0.5000000000008326,0.0,0.5000000000008326,0.8660254037839584,0.0,0.0,0.0,1.0000000000000004]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0318198051534,0.0318198051534,0.054],"R":[0.7071067811865097,-0.7071067811865854,0.0,0.7071067811865854,0.7071067811865097,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0225,0.0389711431703,0.054],"R":[0.4999999999996202,-0.8660254037846581,0.0,0.8660254037846581,0.4999999999996202,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0116468570296,0.043466662183,0.054],"R":[0.2588190451018161,-0.9659258262892573,0.0,0.9659258262892573,0.2588190451018161,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[2.75545529808e-18,0.045,0.054],"R":[0.0,-0.9999999999999998,0.0,0.9999999999999998,0.0,0.0,0.0,0.0,0.9999999999999998]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0116468570296,0.043466662183,0.054],"R":[-0.2588190451018161,-0.9659258262892573,0.0,0.9659258262892573,-0.2588190451018161,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0225,0.0389711431703,0.054],"R":[-0.4999999999996202,-0.8660254037846581,0.0,0.8660254037846581,-0.4999999999996202,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0318198051534,0.0318198051534,0.054],"R":[-0.7071067811865097,-0.7071067811865854,0.0,0.7071067811865854,-0.7071067811865097,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0389711431703,0.0225,0.054],"R":[-0.866025403783958,-0.5000000000008323,0.0,0.5000000000008323,-0.866025403783958,0.0,0.0,0.0,0.9999999999999999]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.043466662183,0.0116468570296,0.054],"R":[-0.9659258262891076,-0.2588190451023742,0.0,0.2588190451023742,-0.9659258262891076,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.045,5.51091059616e-18,0.054],"R":[-1.0,-1.224646799148e-16,0.0,1.224646799148e-16,-1.0,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.043466662183,-0.0116468570296,0.054],"R":[-0.9659258262891076,0.2588190451023742,0.0,-0.2588190451023742,-0.9659258262891076,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0389711431703,-0.0225,0.054],"R":[-0.866025403783958,0.5000000000008323,0.0,-0.5000000000008323,-0.866025403783958,0.0,0.0,0.0,0.9999999999999999]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0318198051534,-0.0318198051534,0.054],"R":[-0.7071067811865097,0.7071067811865854,0.0,-0.7071067811865854,-0.7071067811865097,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0225,-0.0389711431703,0.054],"R":[-0.4999999999996202,0.8660254037846581,0.0,-0.8660254037846581,-0.4999999999996202,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-0.0116468570296,-0.043466662183,0.054],"R":[-0.2588190451018161,0.9659258262892573,0.0,-0.9659258262892573,-0.2588190451018161,0.0,0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[-8.26636589424e-18,-0.045,0.054],"R":[0.0,0.9999999999999998,0.0,-0.9999999999999998,0.0,0.0,0.0,0.0,0.9999999999999998]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0116468570296,-0.043466662183,0.054],"R":[0.2588190451018161,0.9659258262892573,0.0,-0.9659258262892573,0.2588190451018161,-0.0,-0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0225,-0.0389711431703,0.054],"R":[0.4999999999996202,0.8660254037846581,0.0,-0.8660254037846581,0.4999999999996202,-0.0,-0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0318198051534,-0.0318198051534,0.054],"R":[0.7071067811865097,0.7071067811865854,0.0,-0.7071067811865854,0.7071067811865097,-0.0,-0.0,0.0,1.0]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.0389711431703,-0.0225,0.054],"R":[0.8660254037839584,0.5000000000008326,0.0,-0.5000000000008326,0.8660254037839584,-0.0,-0.0,0.0,1.0000000000000004]},{"type":"box","size":[0.004,0.00645097238178,0.046],"pos":[0.043466662183,-0.0116468570296,0.054],"R":[0.9659258262891076,0.2588190451023742,0.0,-0.2588190451023742,0.9659258262891076,-0.0,-0.0,0.0,1.0]},{"type":"capsule","size":[0.004,0.00468669613722,0.0],"pos":[0.0496587428118,0.0,0.0205111126057],"R":[0.1090560579777769,0.0,0.994035601081947,0.0,1.0,0.0,-0.994035601081947,0.0,0.1090560579777769]},{"type":"capsule","size":[0.004,0.00459260658204,0.0],"pos":[0.0586587428118,0.0,0.0225207315489],"R":[0.32628667637746345,0.0,0.9452708632019443,0.0,1.0000000000000002,0.0,-0.9452708632019443,0.0,0.32628667637746345]},{"type":"capsule","size":[0.004,0.00442490755072,0.0],"pos":[0.0667279220614,0.0,0.0264030172254],"R":[0.5387184504181223,0.0,0.8424858640826548,0.0,1.0,0.0,-0.8424858640826548,0.0,0.5387184504181223]},{"type":"capsule","size":[0.004,0.00422298897727,0.0],"pos":[0.0733163793295,0.0,0.0318933982822],"R":[0.7356404988313024,0.0,0.6773721698440472,0.0,1.0000000000000002,0.0,-0.6773721698440472,0.0,0.7356404988313024]},{"type":"capsule","size":[0.004,0.0040399761778,0.0],"pos":[0.0779751221413,0.0,0.0386177143235],"R":[0.8954791227100038,0.0,0.44510351693793887,0.0,1.0,0.0,-0.44510351693793887,0.0,0.8954791227100038]},{"type":"capsule","size":[0.004,0.00393043535146,0.0],"pos":[0.0803866648732,0.0,0.0461177143235],"R":[0.9877495313833148,0.0,0.1560476313567184,0.0,1.0000000000000002,0.0,-0.1560476313567184,0.0,0.9877495313833148]},{"type":"capsule","size":[0.004,0.00393043535146,0.0],"pos":[0.0803866648732,0.0,0.0538822856765],"R":[0.9877495313833148,0.0,-0.1560476313567184,-0.0,1.0000000000000002,0.0,0.1560476313567184,0.0,0.9877495313833148]},{"type":"capsule","size":[0.004,0.0040399761778,0.0],"pos":[0.0779751221413,0.0,0.0613822856765],"R":[0.8954791227100038,0.0,-0.44510351693793887,-0.0,1.0,0.0,0.44510351693793887,0.0,0.8954791227100038]},{"type":"capsule","size":[0.004,0.00422298897727,0.0],"pos":[0.0733163793295,0.0,0.0681066017178],"R":[0.7356404988313024,0.0,-0.6773721698440472,-0.0,1.0000000000000002,0.0,0.6773721698440472,0.0,0.7356404988313024]},{"type":"capsule","size":[0.004,0.00442490755072,0.0],"pos":[0.0667279220614,0.0,0.0735969827746],"R":[0.5387184504181223,0.0,-0.8424858640826548,-0.0,1.0,0.0,0.8424858640826548,0.0,0.5387184504181223]},{"type":"capsule","size":[0.004,0.00459260658204,0.0],"pos":[0.0586587428118,0.0,0.0774792684511],"R":[0.32628667637746345,0.0,-0.9452708632019443,-0.0,1.0000000000000002,0.0,0.9452708632019443,0.0,0.32628667637746345]},{"type":"capsule","size":[0.004,0.00468669613722,0.0],"pos":[0.0496587428118,0.0,0.0794888873943],"R":[0.1090560579777769,0.0,-0.994035601081947,-0.0,1.0,0.0,0.994035601081947,0.0,0.1090560579777769]}],"spoon":[{"type":"ellipsoid","size":[0.014,0.004,0.023],"pos":[0.0,0.0,0.0],"R":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0]},{"type":"capsule","size":[0.003,0.0735,0.0],"pos":[0.0,0.0,0.0915],"R":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0]}]};
+const DIAGRAM_COM = [[0.006, 0.0, 0.048], [0.0, 0.0, 0.045]];
+</script>
+<script>
+const VS = `attribute vec3 p; attribute vec3 n; uniform mat4 M, VP; uniform mat3 NM; varying vec3 vn; varying vec3 wp;
+  void main(){ vec4 w = M*vec4(p,1.0); wp = w.xyz; vn = NM*n; gl_Position = VP*w; }`;
+const FS = `precision mediump float; varying vec3 vn; varying vec3 wp; uniform vec4 col; uniform int mode; uniform vec3 L;
+  void main(){ if(mode==1){ gl_FragColor = vec4(0.0,0.0,0.0,0.28); return; }
+    vec3 c = col.rgb;
+    if(mode==2){ gl_FragColor = col; return; }
+    float d = max(dot(normalize(vn), -L), 0.0); gl_FragColor = vec4(c*(0.42+0.58*d), col.a); }`;
+function norm(v){ const l=Math.hypot(...v)||1; return v.map(x=>x/l); }
+function cross(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+function dot(a,b){ return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+function sphereLike(rx, ry, rz, zoff, half){ // half: 0 full, 1 upper (z>=0), -1 lower
+  const P=[], Q=[], nu=28, nv=14;
+  const th = (j)=> half===1 ? (j/nv)*Math.PI/2 : half===-1 ? Math.PI/2 + (j/nv)*Math.PI/2 : (j/nv)*Math.PI;
+  const pt = (i,j)=>{ const t=th(j), f=2*Math.PI*i/nu; const x=Math.sin(t)*Math.cos(f), y=Math.sin(t)*Math.sin(f), z=Math.cos(t);
+    return [[rx*x, ry*y, rz*z+zoff], norm([x/rx, y/ry, z/rz])]; };
+  for(let j=0;j<nv;j++) for(let i=0;i<nu;i++){ const a=pt(i,j), b=pt(i+1,j), c=pt(i+1,j+1), d=pt(i,j+1);
+    for(const q of [a,b,c,a,c,d]){ P.push(...q[0]); Q.push(...q[1]); } }
+  return [P,Q];
+}
+function cylinder(r, h){ const P=[],Q=[],nu=36;
+  for(let i=0;i<nu;i++){ const f0=2*Math.PI*i/nu, f1=2*Math.PI*(i+1)/nu, c0=Math.cos(f0), s0=Math.sin(f0), c1=Math.cos(f1), s1=Math.sin(f1);
+    const q=[[r*c0,r*s0,-h],[r*c1,r*s1,-h],[r*c1,r*s1,h],[r*c0,r*s0,h]], nn=[[c0,s0,0],[c1,s1,0],[c1,s1,0],[c0,s0,0]];
+    for(const k of [0,1,2,0,2,3]){ P.push(...q[k]); Q.push(...nn[k]); }
+    for(const z of [h,-h]){ const tri=[[0,0,z],[r*c0,r*s0,z],[r*c1,r*s1,z]]; for(const v of (z>0?tri:[tri[0],tri[2],tri[1]])){ P.push(...v); Q.push(0,0,Math.sign(z)); } } }
+  return [P,Q]; }
+function capsule(r, h){ const [P1,N1]=cylinder(r,h); const [P2,N2]=sphereLike(r,r,r,h,1); const [P3,N3]=sphereLike(r,r,r,-h,-1);
+  return [P1.concat(P2,P3), N1.concat(N2,N3)]; }
+function box(a,b,c){ const P=[],Q=[]; const F=[[[1,0,0],[0,1,0],[0,0,1]],[[-1,0,0],[0,0,1],[0,1,0]],[[0,1,0],[0,0,1],[1,0,0]],[[0,-1,0],[1,0,0],[0,0,1]],[[0,0,1],[1,0,0],[0,1,0]],[[0,0,-1],[0,1,0],[1,0,0]]];
+  const s=[a,b,c]; for(const [n,u,v] of F){ const cpt=(su,sv)=>[0,1,2].map(k=>n[k]*s[k]+su*u[k]*s[k]+sv*v[k]*s[k]);
+    const q=[cpt(-1,-1),cpt(1,-1),cpt(1,1),cpt(-1,1)]; for(const k of [0,1,2,0,2,3]){ P.push(...q[k]); Q.push(...n); } }
+  return [P,Q]; }
+function geomMesh(g){ const s=g.size; switch(g.type){
+  case 'box': return box(s[0],s[1],s[2]); case 'cylinder': return cylinder(s[0],s[1]); case 'capsule': return capsule(s[0],s[1]);
+  case 'ellipsoid': return sphereLike(s[0],s[1],s[2],0,0); default: return sphereLike(s[0],s[0],s[0],0,0); } }
+function geomRadius(g){ const s=g.size; switch(g.type){ case 'box': return Math.hypot(s[0],s[1],s[2]); case 'cylinder': return Math.hypot(s[0],s[1]);
+  case 'capsule': return s[0]+s[1]; case 'ellipsoid': return Math.max(s[0],s[1],s[2]); default: return s[0]; } }
+// matrices (column-major 4x4); R is a row-major 3x3
+function mat(R,t){ return [R[0],R[3],R[6],0, R[1],R[4],R[7],0, R[2],R[5],R[8],0, t[0],t[1],t[2],1]; }
+function mul(a,b){ const o=new Array(16).fill(0); for(let i=0;i<4;i++) for(let j=0;j<4;j++) for(let k=0;k<4;k++) o[j*4+i]+=a[k*4+i]*b[j*4+k]; return o; }
+function persp(f,asp,n,fr){ const t=1/Math.tan(f/2); return [t/asp,0,0,0, 0,t,0,0, 0,0,(fr+n)/(n-fr),-1, 0,0,2*fr*n/(n-fr),0]; }
+function lookAt(e,c,u){ const z=norm([e[0]-c[0],e[1]-c[1],e[2]-c[2]]), x=norm(cross(u,z)), y=cross(z,x);
+  return [x[0],y[0],z[0],0, x[1],y[1],z[1],0, x[2],y[2],z[2],0, -dot(x,e),-dot(y,e),-dot(z,e),1]; }
+const LIGHT = norm([-0.35,-0.45,-1.0]), FOV = 0.75;
+const SHADOW = [1,0,0,0, 0,1,0,0, -LIGHT[0]/LIGHT[2],-LIGHT[1]/LIGHT[2],0,0, 0,0,0.0003,1];
+function makeRenderer(cv){
+  const gl = cv.getContext('webgl', {antialias: true}); if(!gl) return null;
+  const sh = (t, src) => { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+  const prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
+  const U = n => gl.getUniformLocation(prog, n), A = n => gl.getAttribLocation(prog, n);
+  const buf = arr => { const b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.STATIC_DRAW); return b; };
+  const MESH = {}; for(const name of ['mug','spoon']) MESH[name] = BODIES[name].map(g=>{ const [P,Q]=geomMesh(g); return {p:buf(P), n:buf(Q), cnt:P.length/3, g}; });
+  const r = 0.6, tableMesh = {p:buf([-r,-r,0, r,-r,0, r,r,0, -r,-r,0, r,r,0, -r,r,0]), n:buf([0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1]), cnt:6};
+  const bind = m => { gl.bindBuffer(gl.ARRAY_BUFFER,m.p); gl.enableVertexAttribArray(A('p')); gl.vertexAttribPointer(A('p'),3,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER,m.n); gl.enableVertexAttribArray(A('n')); gl.vertexAttribPointer(A('n'),3,gl.FLOAT,false,0,0); };
+  return function(x, view, wpx, hpx){
+    if(cv.width!==wpx||cv.height!==hpx){ cv.width=wpx; cv.height=hpx; }
+    gl.viewport(0,0,wpx,hpx); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
+    const tg=view.target, e=[tg[0]+view.dist*Math.cos(view.el)*Math.cos(view.az), tg[1]+view.dist*Math.cos(view.el)*Math.sin(view.az), tg[2]+view.dist*Math.sin(view.el)];
+    const VP = mul(persp(FOV, wpx/hpx, 0.005, 5), lookAt(e, tg, [0,0,1]));
+    gl.uniformMatrix4fv(U('VP'), false, VP); gl.uniform3fv(U('L'), LIGHT);
+    if(!x.outlineMask){
+    gl.uniform1i(U('mode'),2); gl.uniform4fv(U('col'), getComputedStyle(document.body).colorScheme==='dark'?[.10,.11,.12,1]:[.95,.953,.957,1]); gl.uniformMatrix4fv(U('M'),false,[1,0,0,0,0,1,0,0,0,0,1,0,tg[0],tg[1],0,1]);
+    gl.uniformMatrix3fv(U('NM'),false,[1,0,0,0,1,0,0,0,1]); bind(tableMesh); gl.drawArrays(gl.TRIANGLES,0,tableMesh.cnt);
+    }
+    const parts=[];
+    ['mug','spoon'].forEach((name,b)=>{ if(x.outlineBody!==undefined&&b!==x.outlineBody)return; const P=x.pose[b], Rb=P.slice(0,9), tb=P.slice(9);
+      MESH[name].forEach(m=>{ parts.push({m, M: mul(mat(Rb, tb), mat(m.g.R, m.g.pos)), col: name==='mug' ? [0.36,0.42,0.48,(x.mugAlpha===undefined?1:x.mugAlpha)] : [0.75,0.39,0.17,1]}); }); });
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.uniform1i(U('mode'),1);
+    if(!x.outlineMask) for(const q of parts){ gl.uniformMatrix4fv(U('M'),false,mul(SHADOW,q.M)); bind(q.m); gl.drawArrays(gl.TRIANGLES,0,q.m.cnt); }
+    gl.depthMask(true); gl.disable(gl.BLEND); gl.uniform1i(U('mode'),0);
+    const drawPart=q=>{ const M=q.M; gl.uniformMatrix4fv(U('M'),false,M); gl.uniformMatrix3fv(U('NM'),false,[M[0],M[1],M[2],M[4],M[5],M[6],M[8],M[9],M[10]]);
+      gl.uniform4fv(U('col'),q.col); bind(q.m); gl.drawArrays(gl.TRIANGLES,0,q.m.cnt); };
+    for(const q of parts) if(q.col[3]>=1) drawPart(q);
+    const clear=parts.filter(q=>q.col[3]<1);
+    if(clear.length){ gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); for(const q of clear) drawPart(q); gl.depthMask(true); gl.disable(gl.BLEND); }
+  };
+}
+// framing of one scene: centre and radius of a sphere that contains both bodies
+function sceneBounds(x){
+  const cs=[]; ['mug','spoon'].forEach((name,b)=>{ const P=x.pose[b], R=P.slice(0,9), t=P.slice(9);
+    BODIES[name].forEach(g=>{ const q=g.pos; cs.push([[R[0]*q[0]+R[1]*q[1]+R[2]*q[2]+t[0], R[3]*q[0]+R[4]*q[1]+R[5]*q[2]+t[1], R[6]*q[0]+R[7]*q[1]+R[8]*q[2]+t[2]], geomRadius(g)]); }); });
+  const lo=[1e9,1e9,1e9], hi=[-1e9,-1e9,-1e9];
+  for(const [c,r] of cs) for(let k=0;k<3;k++){ lo[k]=Math.min(lo[k],c[k]-r); hi[k]=Math.max(hi[k],c[k]+r); }
+  const ctr=[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2,Math.max(0,(lo[2]+hi[2])/2)]; let rad=0;
+  for(const [c,r] of cs) rad=Math.max(rad, Math.hypot(c[0]-ctr[0],c[1]-ctr[1],c[2]-ctr[2])+r);
+  const tm=x.pose[0].slice(9), ts=x.pose[1].slice(9), d=Math.hypot(ts[0]-tm[0], ts[1]-tm[1]);
+  return {ctr, rad, az: (d>1e-6 ? Math.atan2(ts[1]-tm[1], ts[0]-tm[0]) : 0) - Math.PI/2};   // camera to the side of the mug-spoon line
+}
+
+// Shared viewer for explanatory figures; no optimizer or physical transitions.
+class SceneDiagramView {
+  constructor(host, options={}) {
+    this.canvas=host.querySelector('canvas.scene');this.overlay=host.querySelector('canvas.overlay');
+    this.ctx=this.overlay.getContext('2d');this.render=makeRenderer(this.canvas);this.host=host;
+    this.view={az:-.9,el:.65,dist:.65,target:[.045,-.025,.045],...options};
+    this.pose=null;this.decorate=null;this.queued=false;
+    let drag=null;this.canvas.tabIndex=0;
+    this.canvas.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY];this.canvas.setPointerCapture(e.pointerId);});
+    this.canvas.addEventListener('pointermove',e=>{if(!drag)return;this.view.az-=(e.clientX-drag[0])*.009;this.view.el=Math.max(.12,Math.min(1.5,this.view.el+(e.clientY-drag[1])*.007));drag=[e.clientX,e.clientY];this.draw();});
+    for(const event of ['pointerup','pointercancel'])this.canvas.addEventListener(event,()=>{drag=null;});
+    this.canvas.addEventListener('keydown',e=>{const a={ArrowLeft:[-.12,0],ArrowRight:[.12,0],ArrowUp:[0,.1],ArrowDown:[0,-.1]}[e.key];if(a){e.preventDefault();this.view.az+=a[0];this.view.el=Math.max(.12,Math.min(1.5,this.view.el+a[1]));this.draw();}});
+    new ResizeObserver(()=>this.draw()).observe(host);
+    matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>this.draw());
+  }
+  set(pose,decorate){this.pose=pose;this.decorate=decorate;this.draw();}
+  draw(){if(!this.pose||this.queued)return;this.queued=true;requestAnimationFrame(()=>this.paint());}
+  paint(){
+    this.queued=false;const box=this.host.getBoundingClientRect(),w=box.width,h=box.height,dpr=Math.min(2,devicePixelRatio||1);
+    this.w=w;this.h=h;const v={...this.view,dist:this.view.dist*Math.max(1,1.05/(w/h))};
+    if(!this.render){this.host.setAttribute('data-error','This diagram requires WebGL.');return;}
+    this.render({pose:this.pose,mugAlpha:this.mugAlpha},v,Math.round(w*dpr),Math.round(h*dpr));
+    this.overlay.width=Math.round(w*dpr);this.overlay.height=Math.round(h*dpr);this.ctx.setTransform(dpr,0,0,dpr,0,0);this.ctx.clearRect(0,0,w,h);
+    const t=v.target,e=[t[0]+v.dist*Math.cos(v.el)*Math.cos(v.az),t[1]+v.dist*Math.cos(v.el)*Math.sin(v.az),t[2]+v.dist*Math.sin(v.el)];
+    this.VP=mul(persp(FOV,w/h,.005,5),lookAt(e,t,[0,0,1]));
+    this.ink=getComputedStyle(document.body).color;this.bg=getComputedStyle(document.body).backgroundColor;
+    if(this.decorate)this.decorate(this);
+  }
+  project(p){const q=[...p,1],z=[0,1,2,3].map(i=>q.reduce((s,x,k)=>s+this.VP[k*4+i]*x,0));return[(z[0]/z[3]+1)*this.w/2,(1-z[1]/z[3])*this.h/2];}
+  line(a,b,color=this.ink,dash=[],width=1.5){const p=this.project(a),q=this.project(b),c=this.ctx;c.strokeStyle=color;c.lineWidth=width;c.setLineDash(dash);c.beginPath();c.moveTo(...p);c.lineTo(...q);c.stroke();c.setLineDash([]);return[p,q];}
+  arrow(a,b,color=this.ink,dash=[]){const[p,q]=this.line(a,b,color,dash),d=[q[0]-p[0],q[1]-p[1]],l=Math.hypot(...d);if(l<7)return;const u=d.map(x=>x/l),c=this.ctx;c.strokeStyle=color;c.beginPath();c.moveTo(q[0]-7*u[0]+3*u[1],q[1]-7*u[1]-3*u[0]);c.lineTo(...q);c.lineTo(q[0]-7*u[0]-3*u[1],q[1]-7*u[1]+3*u[0]);c.stroke();}
+  dot(p,color=this.ink,hollow=false,size=3.3){const q=this.project(p),c=this.ctx;c.beginPath();c.arc(...q,size,0,2*Math.PI);c.fillStyle=hollow?this.bg:color;c.fill();c.lineWidth=1.4;c.strokeStyle=color;c.stroke();}
+  label(p,text,dx=7,dy=-7,color=this.ink){const q=this.project(p),c=this.ctx;c.font='13px system-ui, sans-serif';const width=c.measureText(text).width;const x=Math.max(4,Math.min(this.w-width-4,q[0]+dx)),y=Math.max(16,Math.min(this.h-8,q[1]+dy));c.fillStyle=this.bg;c.fillRect(x-2,y-13,width+4,17);c.fillStyle=color;c.fillText(text,x,y);}
+  initialOutlines(pose,colors){
+    // Reference geometry is cached until the release scene, camera or size changes.
+    // Render each initial body without table/shadows; its alpha silhouette gives
+    // the actual projected outline, including the handle opening.
+    const dpr=Math.min(2,devicePixelRatio||1),w=this.canvas.width,h=this.canvas.height;
+    const key=JSON.stringify([pose,this.view,w,h,colors]);
+    if(this.outlineKey!==key){
+      if(!this.outlineRenderer){this.outlineMask=document.createElement('canvas');this.outlineRenderer=makeRenderer(this.outlineMask);}
+      if(!this.outlineRenderer)return;
+      if(!this.outlineImage){this.outlineImage=document.createElement('canvas');this.outlineScratch=document.createElement('canvas');this.outlineEdge=document.createElement('canvas');}
+      const mask=this.outlineScratch,edge=this.outlineEdge;
+      for(const cv of [this.outlineImage,mask,edge])if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+      const result=this.outlineImage.getContext('2d');result.clearRect(0,0,w,h);
+      const m=mask.getContext('2d'),e=edge.getContext('2d'),offset=Math.max(1,Math.round(1.2*dpr));
+      const camera={...this.view,dist:this.view.dist*Math.max(1,1.05/(this.w/this.h))};
+      for(let b=0;b<2;b++){
+        this.outlineRenderer({pose,outlineMask:true,outlineBody:b},camera,w,h);
+        m.globalCompositeOperation='source-over';m.clearRect(0,0,w,h);m.drawImage(this.outlineMask,0,0);
+        m.globalCompositeOperation='source-in';m.fillStyle=colors[b];m.fillRect(0,0,w,h);m.globalCompositeOperation='source-over';
+        e.globalCompositeOperation='source-over';e.clearRect(0,0,w,h);
+        for(const [dx,dy]of[[-offset,0],[offset,0],[0,-offset],[0,offset],[-offset,-offset],[offset,offset],[-offset,offset],[offset,-offset]])e.drawImage(mask,dx,dy);
+        e.globalCompositeOperation='destination-out';e.drawImage(mask,0,0);e.globalCompositeOperation='source-over';
+        result.drawImage(edge,0,0);
+      }
+      this.outlineKey=key;
+    }
+    this.ctx.save();this.ctx.globalAlpha=.72;this.ctx.drawImage(this.outlineImage,0,0,this.w,this.h);this.ctx.restore();
+  }
+  fit(poses){const bs=poses.map(p=>sceneBounds({pose:p})),lo=[0,1,2].map(k=>Math.min(...bs.map(b=>b.ctr[k]-b.rad))),hi=[0,1,2].map(k=>Math.max(...bs.map(b=>b.ctr[k]+b.rad)));this.view.target=lo.map((x,k)=>(x+hi[k])/2);const r=Math.max(...bs.map(b=>Math.hypot(...b.ctr.map((x,k)=>x-this.view.target[k]))+b.rad));this.view.dist=Math.max(.3,1.05*r/Math.sin(FOV/2));}
+}
+window.SceneDiagramView=SceneDiagramView;
+window.SceneGeometry={mat,mul,world:(p,pose)=>[0,1,2].map(i=>pose[3*i]*p[0]+pose[3*i+1]*p[1]+pose[3*i+2]*p[2]+pose[9+i])};
+</script>
+<script>
+// Loads a data file of a figure as a script (no fetch, so the figure also works when the page is opened as a file), retries a dropped
+// connection, and says so in the figure when the data cannot be loaded. present(): is the data there; start(): draw the figure.
+// label: the text shown while loading. onFail (optional, for data asked for later): called when loading failed, controls usable again.
+function loadFigureData(src, present, start, label, onFail){
+ const note=document.getElementById('loading'),controls=()=>document.querySelectorAll('button,select,input');let k=0;
+ const begin=()=>{note.hidden=false;note.removeAttribute('role');note.textContent=label;for(const c of controls())c.disabled=true;};
+ const fail=()=>{note.setAttribute('role','alert');note.textContent='The data of this figure could not be loaded. ';const b=document.createElement('button');b.textContent='Try again';b.addEventListener('click',()=>{k=0;begin();go();});
+  if(onFail){for(const c of controls())c.disabled=false;onFail();}note.appendChild(b);};
+ const go=()=>{const s=document.createElement('script');s.src=src+(k?(src.includes('?')?'&':'?')+'retry='+k:'');
+  s.onload=()=>{if(!present()){fail();return;}note.hidden=true;for(const c of controls())c.disabled=false;start();};
+  s.onerror=()=>{s.remove();if(++k<=3)setTimeout(go,300*2**k);else fail();};document.head.appendChild(s);};
+ begin();go();
+}
+</script>
+<script>
+loadFigureData('data-samples.js?v=5a2a907bf8',()=>typeof PAIR_SAMPLES!=='undefined',() => {
+ // the mug: free (the data loaded first), resting in any of its stable postures, or resting upright; the last two are loaded when first chosen
+ const data=k=>k==='stable'?(typeof PAIR_SAMPLES_STABLE!=='undefined'?PAIR_SAMPLES_STABLE:null):k==='upright'?(typeof PAIR_SAMPLES_UPRIGHT!=='undefined'?PAIR_SAMPLES_UPRIGHT:null):D;
+ const MORE={stable:['data-samples-stable.js?v=837937b512','Loading the scenes with the mug resting in a stable posture…'],upright:['data-samples-upright.js?v=51caec9561','Loading the scenes with the mug resting upright…']};let mug='free';
+ const $=s=>document.querySelector(s),D=PAIR_SAMPLES,T=D.turns,view=new SceneDiagramView($('#view'),{dist:.6});
+ const BLUE='#2a78d6',ORANGE='#d86b30',RED='#c43c42',L=.035;
+ let set=D.sets.full,i=0,j=0;
+ const rot=(P,n)=>[0,1,2].map(a=>P[3*a]*n[0]+P[3*a+1]*n[1]+P[3*a+2]*n[2]);
+ const eye=v=>{const q=v.view,d=q.dist*Math.max(1,1.05/(v.w/v.h));return[q.target[0]+d*Math.cos(q.el)*Math.cos(q.az),q.target[1]+d*Math.cos(q.el)*Math.sin(q.az),q.target[2]+d*Math.sin(q.el)];};
+ function dots(v,pose,src,cols,alpha,size){const e=eye(v),c=v.ctx;[['mug',0],['spoon',1]].forEach(([name,b])=>{c.fillStyle=cols[b];c.globalAlpha=alpha;
+   for(const r of src[name]){const p=SceneGeometry.world(r,pose[b]),n=rot(pose[b],[r[3],r[4],r[5]]);if(n[0]*(p[0]-e[0])+n[1]*(p[1]-e[1])+n[2]*(p[2]-e[2])>=0)continue;const q=v.project(p);c.fillRect(q[0]-size/2,q[1]-size/2,size,size);}c.globalAlpha=1;});}
+ function strip(){const s=set.samples[i],cv=$('#strip'),dpr=Math.min(2,devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);
+  const cs=getComputedStyle(document.body),ink=cs.color,grid=cs.getPropertyValue('--grid').trim()||'#ccc',cw=w/T;
+  for(let k=0;k<T;k++){const x=k*cw+1,ww=cw-2;if(s.free[k]){c.fillStyle=BLUE;c.fillRect(x,5,ww,h-10);}else{c.strokeStyle=grid;c.lineWidth=1;c.strokeRect(x+.5,5.5,ww-1,h-11);c.save();c.beginPath();c.rect(x,5,ww,h-10);c.clip();c.strokeStyle=ink;c.globalAlpha=.45;for(let d=-h;d<ww+h;d+=4){c.beginPath();c.moveTo(x+d,h-5);c.lineTo(x+d+h,5);c.stroke();}c.restore();}}
+  c.strokeStyle=ink;c.lineWidth=2;c.strokeRect(j*cw+.5,1.5,cw-1,h-3);}
+ const why=(s,j,short)=>{const out=[];if(s.backoff[j]>D.skin_mm)out.push(short?`spoon pushed out ${s.backoff[j].toFixed(1)} mm`:`the spoon would overlap the mug, pushed out ${s.backoff[j].toFixed(1)} mm`);if(s.lift&&s.lift[j]>0)out.push(short?`spoon raised ${s.lift[j].toFixed(1)} mm off the table`:`the spoon would reach below the table, raised ${s.lift[j].toFixed(1)} mm`);return out.join(short?', ':'; ');};
+ function show(){const s=set.samples[i],pose=s.poses[j],free=!!s.free[j];view.mugAlpha=$('#ghost').checked?.16:1;
+  view.set(pose,v=>{if($('#pc').checked)dots(v,pose,D.pointCloud,[v.ink,v.ink],.35,1.6);if($('#cloud').checked)dots(v,pose,set.cloud,[BLUE,ORANGE],.6,2);
+   const p=s.point[j],n=s.normal[j],a=p.map((x,k)=>x+L*n[k]),b=p.map((x,k)=>x-L*n[k]);
+   v.arrow(p,a,BLUE);v.arrow(p,b,ORANGE);v.dot(p,free?v.ink:RED,false,4);const pa=v.project(a),pb=v.project(b),close=Math.hypot(pa[0]-pb[0],pa[1]-pb[1])<90;
+   v.label(a,'mug normal',close?-84:8,close?-16:-8,BLUE);v.label(b,'spoon normal',close?10:8,close?26:16,ORANGE);
+   if(!free)v.label(p,'blocked: '+why(s,j,true),14,48,RED);});
+  const nf=s.free.reduce((x,y)=>x+y,0),ang=((s.theta+360*j/T)%360);
+  $('#sample-id').textContent=`Sample ${s.id} of ${set.samples.length}`;$('#pm').textContent=`(${s.pointMug.join(', ')}) mm`;$('#ps').textContent=`(${s.pointSpoon.join(', ')}) mm`;$('#grav').textContent=`(${s.gravity.map(x=>x.toFixed(2)).join(', ')})`;
+  $('#where').textContent=D.pocketNames[String(s.pocket)]||`pocket ${s.pocket}`;$('#incup').textContent=s.inCup?(j===0?'yes':'yes at the sampled turn'):(j===0?'no':'no at the sampled turn');
+  $('#turn-v').textContent=`${ang.toFixed(1)}°${j===0?' · the sampled turn':''}`;$('#free-v').textContent=`${nf} of ${T}`;$('#turn').value=String(j);
+  $('#posture').textContent=s.posture?`${s.posture}, resting on the table`:'any orientation (the pair is set on the table by its lowest point)';
+  const st=$('#state');st.textContent=free?(s.posture?'free · the designated points touch and the spoon is above the table':'free · the designated points touch'):'blocked · '+why(s,j,false);st.style.color=free?'':RED;strip();}
+ function select(k){i=(k+set.samples.length)%set.samples.length;j=0;view.fit(set.samples[i].poses);view.view.dist*=.8;show();}
+ $('#prev').addEventListener('click',()=>select(i-1));$('#next').addEventListener('click',()=>select(i+1));
+ $('#random').addEventListener('click',()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);let k=a[0]%set.samples.length;if(k===i)k=(k+1)%set.samples.length;select(k);});
+ const pick0=()=>{set=data(mug).sets[$('#domain').value];select(0);};$('#domain').addEventListener('change',pick0);
+ $('#mug').addEventListener('change',e=>{const k=e.target.value;if(data(k)){mug=k;pick0();}else loadFigureData(MORE[k][0],()=>!!data(k),()=>{mug=k;pick0();},MORE[k][1],()=>{e.target.value=mug;});});
+ $('#turn').addEventListener('input',e=>{j=Number(e.target.value);show();});for(const id of ['cloud','pc','ghost'])$('#'+id).addEventListener('change',show);
+ const pick=e=>{const r=$('#strip').getBoundingClientRect();j=Math.max(0,Math.min(T-1,Math.floor((e.clientX-r.left)/r.width*T)));show();};
+ let down=false;$('#strip').addEventListener('pointerdown',e=>{down=true;$('#strip').setPointerCapture(e.pointerId);pick(e);});$('#strip').addEventListener('pointermove',e=>{if(down)pick(e);});for(const ev of ['pointerup','pointercancel'])$('#strip').addEventListener(ev,()=>{down=false;});
+ new ResizeObserver(strip).observe($('#strip'));matchMedia('(prefers-color-scheme:dark)').addEventListener('change',strip);
+ $('#mug').value='free';$('#domain').value='full';select(0);
+},'Loading the sampled scenes…');
+</script>
+<script>
+// The message carries only the figure's height, so it is sent to any parent ('*'): a page opened as a file has no origin to name.
+(() => {let last=0;const target='*';const send=()=>{const h=Math.ceil(document.body.getBoundingClientRect().height)+4;if(Math.abs(h-last)>1){last=h;try{parent.postMessage({type:'scene-diagram-height',height:h},target);}catch(e){}}};new ResizeObserver(send).observe(document.body);addEventListener('load',send);send();})();
+</script>
+</body></html>
